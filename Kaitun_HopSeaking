@@ -3853,7 +3853,7 @@ function ServerHop:StartHopLoop()
                 task.wait(0.05)
                 if self.IsTeleportInProgress then
                     local elapsed = os.clock() - self.LastWatchdogResetTime
-                    if elapsed > 1 then
+                    if elapsed > 0.1 then
                         self:TriggerNextHopImmediately("Rapid Spam")
                     end
                 end
@@ -5238,6 +5238,5 @@ task.spawn(function()
 end)
 --]]
 end
-
 
 
