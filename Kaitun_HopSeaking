@@ -1,5 +1,14 @@
 
-
+_G.webhook_url = (type(_G.webhook_url) == "string") and _G.webhook_url or ""
+_G.AutoSeaEvents = (_G.AutoSeaEvents ~= nil) and _G.AutoSeaEvents or true
+_G.buso = (_G.buso ~= nil) and _G.buso or true
+_G.ken = (_G.ken ~= nil) and _G.ken or true
+_G.noclip = (_G.noclip ~= nil) and _G.noclip or true
+_G.WhiteScreen = (_G.WhiteScreen ~= nil) and _G.WhiteScreen or false
+_G.boss = (type(_G.boss) == "table") and _G.boss or {"Sea King", "Hydra"}
+_G.tool = (type(_G.tool) == "table") and _G.tool or {"Sword", "Fruit", "Melee"}
+_G.skill = (type(_G.skill) == "table") and _G.skill or {"M1", "Z", "X", "C", "V", "B", "E"}
+_G.BossEarlyJoinSec = (type(_G.BossEarlyJoinSec) == "number") and _G.BossEarlyJoinSec or 30
 
 
 -- =========================================================================
@@ -43,7 +52,7 @@ local HUDY_SESSION_MEM = nil
 
 local function AuthenticateSession()
     -- [BẢO MẬT LOADER] Kiểm tra token xác nhận load qua loader.lua
-    if _G.HUDY_LOADER_KEY ~= "HudyV5_SECURE_12345" then
+    if _G.HUDY_LOADER_KEY ~= "HudyV6_SECURE_3399216308" then
         warn("[Hudy V5] Phát hiện Bypass! Script không được chạy qua Loader chính thức.")
         return false
     end
@@ -3844,7 +3853,7 @@ function ServerHop:StartHopLoop()
                 task.wait(0.05)
                 if self.IsTeleportInProgress then
                     local elapsed = os.clock() - self.LastWatchdogResetTime
-                    if elapsed > 1 then
+                    if elapsed > 0.1 then
                         self:TriggerNextHopImmediately("Rapid Spam")
                     end
                 end
