@@ -1,12 +1,39 @@
-
 -- HuDy Hub - King Legacy Automation Framework
 -- Architecture: Modular, Async, Performance-Optimized
 -- ==============================================================================
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- =========================================================================
+-- AUTO-EXECUTE SAFE INITIALIZATION & GAME LOAD 
+-- =========================================================================
+while not pcall(function() return game:GetService("RunService") end) do
+    task.wait(0.1) 
+end
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+if not game:IsLoaded() then
+    repeat
+        RunService.Heartbeat:Wait()
+    until game:IsLoaded()
+end
+local LocalPlayer = Players.LocalPlayer
+while not LocalPlayer do
+    RunService.Heartbeat:Wait()
+    LocalPlayer = Players.LocalPlayer
+end
+local LP = LocalPlayer
+local lplr = LocalPlayer
+
 local HttpService = game:GetService("HttpService")
+local function SafeDecodeLocal(val)
+    if type(val) == "string" and val ~= "" then
+        local ok, res = pcall(function() return HttpService:JSONDecode(val) end)
+        if ok and type(res) == "table" then return res end
+    end
+    return {}
+end
+pcall(function() if type(getgenv) == "function" then getgenv().SafeDecodeLocal = SafeDecodeLocal end end)
+_G.SafeDecodeLocal = SafeDecodeLocal
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -15,9 +42,8 @@ local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 
--- Chá» game load hoÃ n chá»‰nh
-if not game:IsLoaded() then game.Loaded:Wait() end
-repeat task.wait() until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+-- Đảm bảo nhân vật đã spawn hoàn tất
+repeat task.wait(0.1) until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
 -- ==============================================================================
 -- AIMBOT HOOK (Báº» khÃ³a chuá»™t Ä‘á»ƒ luÃ´n target vÃ o Mob)
@@ -255,7 +281,7 @@ local LevelDataSea1 = {
 local LevelDataSea2 = {
     { MinLv = 2250, MaxLv = 2299, NpcName = "Japan Quest 1", QuestName = "Kill 4 Beast Pirates", MobName = "Beast Pirate [Lv. 2250]", CFrame = CFrame.new(-4121.2, 79.1, -74.9) },
     { MinLv = 2300, MaxLv = 2349, NpcName = "Japan Quest 1", QuestName = "Kill 4 Beast Swordman", MobName = "Beast Swordman [Lv. 2300]", CFrame = CFrame.new(-4026.0, 105.1, -509.0) },
-    { MinLv = 2350, MaxLv = 2399, NpcName = "Japan Quest 1", QuestName = "Kill 1 Gazelle Man", MobName = "Gazelle Man [Lv. 2350]", CFrame = CFrame.new(-4356, 57.4, -65.9) },
+    { MinLv = 2350, MaxLv = 2399, NpcName = "Japan Quest 1", QuestName = "Kill 1 Gazelle Man", MobName = "Gazelle Man [Lv. 2350]", CFrame = CFrame.new(-4346.4, 57.3, 343.6) },
     { MinLv = 2400, MaxLv = 2449, NpcName = "Japan Quest 2", QuestName = "Kill 4 Bandit Beast Pirates", MobName = "Bandit Beast Pirate [Lv. 2400]", CFrame = CFrame.new(-4609.8, 135.8, -917.7) },
     { MinLv = 2450, MaxLv = 2499, NpcName = "Japan Quest 2", QuestName = "Kill 4 Powerful Beast Pirates", MobName = "Powerful Beast Pirate [Lv. 2450]", CFrame = CFrame.new(-4609.8, 135.8, -917.7) },
     { MinLv = 2500, MaxLv = 2549, NpcName = "Japan Quest 2", QuestName = "Kill 1 Violet Samurai", MobName = "Violet Samurai [Lv. 2500]", CFrame = CFrame.new(-5107.2, 85.6, -1013.6) },
