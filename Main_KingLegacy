@@ -72,7 +72,7 @@ local HuDy = {
         AutoClickPlay = true,
         AutoBuso = true,
         AutoKen = true,
-        BringMobs = false,
+        BringMobs = true,
         AntiMod = true,
         AutoRejoin = true,
         AutoHopTree = false,
@@ -253,11 +253,11 @@ local LevelDataSea1 = {
 }
 
 local LevelDataSea2 = {
-    { MinLv = 2250, MaxLv = 2299, NpcName = "Japan Quest 1", QuestName = "Kill 4 Beast Pirates", MobName = "Beast Pirate [Lv. 2250]", CFrame = CFrame.new(-4356, 57.4, -65.9) },
+    { MinLv = 2250, MaxLv = 2299, NpcName = "Japan Quest 1", QuestName = "Kill 4 Beast Pirates", MobName = "Beast Pirate [Lv. 2250]", CFrame = CFrame.new(-4121.2, 79.1, -74.9) },
     { MinLv = 2300, MaxLv = 2349, NpcName = "Japan Quest 1", QuestName = "Kill 4 Beast Swordman", MobName = "Beast Swordman [Lv. 2300]", CFrame = CFrame.new(-4026.0, 105.1, -509.0) },
     { MinLv = 2350, MaxLv = 2399, NpcName = "Japan Quest 1", QuestName = "Kill 1 Gazelle Man", MobName = "Gazelle Man [Lv. 2350]", CFrame = CFrame.new(-4356, 57.4, -65.9) },
-    { MinLv = 2400, MaxLv = 2449, NpcName = "Japan Quest 2", QuestName = "Kill 4 Bandit Beast Pirates", MobName = "Bandit Beast Pirate [Lv. 2400]", CFrame = CFrame.new(-4572.6, 135.9, -912) },
-    { MinLv = 2450, MaxLv = 2499, NpcName = "Japan Quest 2", QuestName = "Kill 4 Powerful Beast Pirates", MobName = "Powerful Beast Pirate [Lv. 2450]", CFrame = CFrame.new(-4572.6, 135.9, -912) },
+    { MinLv = 2400, MaxLv = 2449, NpcName = "Japan Quest 2", QuestName = "Kill 4 Bandit Beast Pirates", MobName = "Bandit Beast Pirate [Lv. 2400]", CFrame = CFrame.new(-4609.8, 135.8, -917.7) },
+    { MinLv = 2450, MaxLv = 2499, NpcName = "Japan Quest 2", QuestName = "Kill 4 Powerful Beast Pirates", MobName = "Powerful Beast Pirate [Lv. 2450]", CFrame = CFrame.new(-4609.8, 135.8, -917.7) },
     { MinLv = 2500, MaxLv = 2549, NpcName = "Japan Quest 2", QuestName = "Kill 1 Violet Samurai", MobName = "Violet Samurai [Lv. 2500]", CFrame = CFrame.new(-5107.2, 85.6, -1013.6) },
     { MinLv = 2550, MaxLv = 2599, NpcName = "Japan Quest 3", QuestName = "Kill 1 Duke", MobName = "Duke [Lv. 2550]", CFrame = CFrame.new(-5284.7, 99.8, -101.1) },
     { MinLv = 2600, MaxLv = 2649, NpcName = "Japan Quest 3", QuestName = "Kill 1 Magician", MobName = "Magician [Lv. 2600]", CFrame = CFrame.new(-5284.7, 99.8, -101.1) },
@@ -269,12 +269,12 @@ local LevelDataSea2 = {
     { MinLv = 2900, MaxLv = 2949, NpcName = "Japan Quest 5", QuestName = "Kill 1 Petra", MobName = "Petra [Lv. 2900]", CFrame = CFrame.new(-5552.5, 57.3, 971.4) },
     { MinLv = 2950, MaxLv = 2999, NpcName = "Japan Quest 6", QuestName = "Kill 1 Kappa", MobName = "Kappa [Lv. 2950]", CFrame = CFrame.new(-5111.4, 57.4, 1888.9) },
     { MinLv = 3000, MaxLv = 3024, NpcName = "Japan Quest 6", QuestName = "Kill 1 Joey", MobName = "Joey [Lv. 3000]", CFrame = CFrame.new(-5111.4, 57.4, 1888.9) },
-    { MinLv = 3025, MaxLv = 3074, NpcName = "Skull Island Quest", QuestName = "Kill 4 Skull Pirates", MobName = "Skull Pirate [Lv. 3025]", CFrame = CFrame.new(-6178.5, 57.8, 6895.6) },
+    { MinLv = 3025, MaxLv = 3074, NpcName = "Skull Island Quest", QuestName = "Kill 4 Skull Pirates", MobName = "Skull Pirate [Lv. 3050]", CFrame = CFrame.new(-6382.0, 57.7, 7028.3) },
     { MinLv = 3075, MaxLv = 3099, NpcName = "Skull Island Quest", QuestName = "Kill 1 Elite Skeleton", MobName = "Elite Skeleton [Lv. 3075]", CFrame = CFrame.new(-5889.3, 98.2, 7248.1) },
     { MinLv = 3100, MaxLv = 3124, NpcName = "Dead Tundra", QuestName = "Kill 1 Desert Thief", MobName = "Desert Thief [Lv. 3125]", CFrame = CFrame.new(1375.9, 14.4, 1394.2) },
-    { MinLv = 3125, MaxLv = 3149, NpcName = "Dead Tundra", QuestName = "Kill 1 Anubis", MobName = "Anubis [Lv. 3125]", CFrame = CFrame.new(1868.5, 14.5, 991.8) },
-    { MinLv = 3150, MaxLv = 3174, NpcName = "Dead Tundra", QuestName = "Kill 1 Pharaoh", MobName = "Pharaoh [Lv. 3175]", CFrame = CFrame.new(1868.5, 14.5, 991.8) },
-    { MinLv = 3175, MaxLv = 3199, NpcName = "Dead Tundra", QuestName = "Kill 1 Flame User", MobName = "Flame User [Lv. 3200]", CFrame = CFrame.new(1868.5, 14.5, 991.8) },
+    { MinLv = 3125, MaxLv = 3149, NpcName = "Dead Tundra", QuestName = "Kill 1 Anubis", MobName = "Anubis [Lv. 3125]", CFrame = CFrame.new(2108.9, 14.4, 956.2) },
+    { MinLv = 3150, MaxLv = 3174, NpcName = "Dead Tundra", QuestName = "Kill 1 Pharaoh", MobName = "Pharaoh [Lv. 3175]", CFrame = CFrame.new(1888.4, 48.8, 1711.5) },
+    { MinLv = 3175, MaxLv = 3199, NpcName = "Dead Tundra", QuestName = "Kill 1 Flame User", MobName = "Flame User [Lv. 3200]", CFrame = CFrame.new(2036.0, 14.4, 1349.3) },
     { MinLv = 3200, MaxLv = 3224, NpcName = "Loaf Quest 1", QuestName = "Kill 4 Chess Soldiers", MobName = "Chess Soldier [Lv. 3200]", CFrame = CFrame.new(-627.6, 28.7, 8239.3) },
     { MinLv = 3225, MaxLv = 3249, NpcName = "Loaf Quest 1", QuestName = "Kill 1 Sunken Vessel", MobName = "Sunken Vessel [Lv. 3225]", CFrame = CFrame.new(-1076.3, 50.9, 8229.5) },
     { MinLv = 3250, MaxLv = 3274, NpcName = "Loaf Quest 1", QuestName = "Kill 1 Biscuit Man", MobName = "Biscuit Man [Lv. 3250]", CFrame = CFrame.new(-1531.1, 188.6, 8864.9) },
@@ -386,28 +386,86 @@ function HuDy.GetWeapon(customWeaponType)
         return false
     end
     
+    -- 1. Tập hợp TẤT CẢ vũ khí khớp với các mục được chọn để spam skill qua remote
     local matchedTools = {}
+    local seenTool = {}
     for _, tool in ipairs(allTools) do
         for _, sel in ipairs(selectedTable) do
-            if MatchesType(tool, sel) then
+            if MatchesType(tool, sel) and not seenTool[tool] then
+                seenTool[tool] = true
                 table.insert(matchedTools, tool)
                 break
             end
         end
     end
-    
-    if #matchedTools > 0 then
-        return matchedTools
+
+    -- 2. Phân tích loại vũ khí ĐƯỢC PHÉP EQUIP TRÊN TAY:
+    -- - Nếu chọn hết (Sword + Melee + Fruit) -> CHỈ DÙNG SWORD
+    -- - Nếu chọn Fruit và Melee               -> CHỈ DÙNG MELEE
+    -- - Nếu chọn Sword và Fruit               -> CHỈ DÙNG SWORD
+    -- - Nếu chọn Sword và Melee               -> ƯU TIÊN SWORD
+    -- - Nếu chỉ chọn 1 loại                    -> Dùng đúng loại đó
+    local hasSword = false
+    local hasMelee = false
+    local hasFruit = false
+
+    for _, sel in ipairs(selectedTable) do
+        local s = string.lower(tostring(sel))
+        if s:find("sword") then
+            hasSword = true
+        elseif s:find("melee") or s:find("combat") then
+            hasMelee = true
+        elseif s:find("fruit") then
+            hasFruit = true
+        end
     end
-    
+
+    local equipPriority = {}
+    if hasSword and hasMelee and hasFruit then
+        equipPriority = {"sword", "melee", "fruit"}
+    elseif hasFruit and hasMelee and not hasSword then
+        equipPriority = {"melee", "fruit"}
+    elseif hasSword and hasFruit and not hasMelee then
+        equipPriority = {"sword", "fruit"}
+    elseif hasSword and hasMelee then
+        equipPriority = {"sword", "melee"}
+    elseif hasSword then
+        equipPriority = {"sword"}
+    elseif hasMelee then
+        equipPriority = {"melee"}
+    elseif hasFruit then
+        equipPriority = {"fruit"}
+    else
+        equipPriority = {"melee", "sword", "fruit"}
+    end
+
     local currentTool = char:FindFirstChildOfClass("Tool")
-    if currentTool then return {currentTool} end
-    
-    if backpack then
-        local firstTool = backpack:FindFirstChildOfClass("Tool")
-        if firstTool then return {firstTool} end
+    local chosenEquipTool = nil
+
+    -- Tìm 1 tool duy nhất để cầm trên tay theo thứ tự ưu tiên
+    for _, pType in ipairs(equipPriority) do
+        if currentTool and MatchesType(currentTool, pType) then
+            chosenEquipTool = currentTool
+            break
+        end
+        for _, tool in ipairs(matchedTools) do
+            if MatchesType(tool, pType) then
+                chosenEquipTool = tool
+                break
+            end
+        end
+        if chosenEquipTool then break end
     end
-    return nil
+
+    if not chosenEquipTool then
+        chosenEquipTool = matchedTools[1] or currentTool or (backpack and backpack:FindFirstChildOfClass("Tool"))
+    end
+
+    if #matchedTools == 0 and chosenEquipTool then
+        matchedTools = {chosenEquipTool}
+    end
+
+    return matchedTools, chosenEquipTool
 end
 
 -- =========================================================================
@@ -534,27 +592,32 @@ end
 
 function HuDy.Attack(mobRoot)
     _G.HuDy_Target = mobRoot
-    local tools = HuDy.GetWeapon()
+    local tools, equipTool = HuDy.GetWeapon()
     if tools and #tools > 0 then
         local char = LocalPlayer.Character
-        for _, tool in ipairs(tools) do
-            if tool.Parent ~= char and char:FindFirstChild("Humanoid") then
-                char.Humanoid:EquipTool(tool)
-            end
-            
-            pcall(function() tool:Activate() end)
-            
-            if mobRoot then
-                pcall(function()
-                    -- Tự động kích hoạt Room của Ope V2 khi tiếp cận quái mới hoặc quái ra khỏi vùng Room
-                    if HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(mobRoot.Position, mobRoot) and not HuDy.OpeRoomCasting then
-                        HuDy.CastOpeRoom(mobRoot.CFrame, mobRoot)
-                    end
+        local humanoid = char and char:FindFirstChild("Humanoid")
 
-                    local chest = ReplicatedStorage:FindFirstChild("Chest")
-                    local skillAction = chest and chest:FindFirstChild("Remotes") and chest.Remotes:FindFirstChild("Functions") and chest.Remotes.Functions:FindFirstChild("SkillAction")
-                    if not skillAction then return end
-                    
+        -- CHỈ EQUIP DUY NHẤT 1 VŨ KHÍ ƯU TIÊN TRÊN TAY (KHÔNG ĐỔI TOOL LIÊN TỤC):
+        if equipTool and humanoid then
+            if equipTool.Parent ~= char then
+                humanoid:EquipTool(equipTool)
+            end
+            pcall(function() equipTool:Activate() end)
+        end
+        
+        if mobRoot then
+            pcall(function()
+                -- Tự động kích hoạt Room của Ope V2 khi tiếp cận quái mới hoặc quái ra khỏi vùng Room
+                if HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(mobRoot.Position, mobRoot) and not HuDy.OpeRoomCasting then
+                    HuDy.CastOpeRoom(mobRoot.CFrame, mobRoot)
+                end
+
+                local chest = ReplicatedStorage:FindFirstChild("Chest")
+                local skillAction = chest and chest:FindFirstChild("Remotes") and chest.Remotes:FindFirstChild("Functions") and chest.Remotes.Functions:FindFirstChild("SkillAction")
+                if not skillAction then return end
+                
+                -- GIỮ NGUYÊN 100% LOGIC SPAM SKILL BẰNG REMOTE CHO TẤT CẢ VŨ KHÍ ĐƯỢC CHỌN:
+                for _, tool in ipairs(tools) do
                     local toolToolTip = string.lower(tool.ToolTip or "")
                     local toolNameLower = string.lower(tool.Name or "")
                     local prefix = "FS"
@@ -598,8 +661,8 @@ function HuDy.Attack(mobRoot)
                             end
                         end
                     end
-                end)
-            end
+                end
+            end)
         end
     end
 end
@@ -697,6 +760,55 @@ function HuDy.FindMob(baseSearchName)
         end
     end
     return nil, nil
+end
+
+-- Quét tìm toàn bộ quái còn sống thuộc bãi trong phạm vi chỉ định (Hỗ trợ Gom quái)
+function HuDy.GetSpotMobs(mobName, spotPos, maxRadius)
+    maxRadius = maxRadius or 350
+    local cleanTarget = string.lower(string.match(mobName, "^(.-)%s*%[") or mobName):match("^%s*(.-)%s*$")
+    
+    local foldersToSearch = {}
+    local monsterFolder = workspace:FindFirstChild("Monster")
+    if monsterFolder then
+        if monsterFolder:FindFirstChild("Mon") then table.insert(foldersToSearch, monsterFolder.Mon) end
+        if monsterFolder:FindFirstChild("Boss") then table.insert(foldersToSearch, monsterFolder.Boss) end
+        table.insert(foldersToSearch, monsterFolder)
+    end
+    local extraFolders = {"SeaMonster", "Boss", "MOB", "Mobs", "Alive", "Enemies"}
+    for _, name in ipairs(extraFolders) do
+        local f = workspace:FindFirstChild(name)
+        if f then table.insert(foldersToSearch, f) end
+    end
+    
+    local spotV3 = (typeof(spotPos) == "CFrame" and spotPos.Position) or (typeof(spotPos) == "Vector3" and spotPos) or nil
+    local found = {}
+    local seen = {}
+    
+    for _, f in ipairs(foldersToSearch) do
+        if f then
+            for _, m in ipairs(f:GetDescendants()) do
+                if m:IsA("Model") and not seen[m] then
+                    local hum = m:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 then
+                        local mBase = string.lower(string.match(string.match(m.Name, "^(.-)%s*%[") or m.Name, "^%s*(.-)%s*$"))
+                        if mBase == cleanTarget then
+                            local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Head") or m:FindFirstChildWhichIsA("BasePart", true)
+                            if r then
+                                local dist = spotV3 and (r.Position - spotV3).Magnitude or 0
+                                if not spotV3 or dist <= maxRadius then
+                                    seen[m] = true
+                                    table.insert(found, { Model = m, Root = r, Hum = hum, Dist = dist })
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    table.sort(found, function(a, b) return a.Dist < b.Dist end)
+    return found
 end
 
 function HuDy.GetTargetDataByMob(mobName)
@@ -1549,7 +1661,8 @@ function HuDy.StartAutoFarm()
                             elseif currentMat:find("Rusted Scrap") then 
                                 currentTargetMobNames = isSea1 and {"Clown Swordman [Lv. 50]"} or {"Beast Swordman [Lv. 2300]"}
                             elseif currentMat:find("Fresh Fish") then currentTargetMobNames = {"Fighter Fishman [Lv. 180]"}
-                            elseif currentMat:find("Thief's Rag") then currentTargetMobNames = {"Sand Bandit [Lv. 575]", "Desert Marauder [Lv. 675]"}
+                            elseif currentMat:lower():find("thief") then 
+                                currentTargetMobNames = isSea2 and {"Desert Thief [Lv. 3125]"} or {"Sand Bandit [Lv. 575]", "Desert Marauder [Lv. 675]"}
                             elseif currentMat:find("Angellic's Feather") then currentTargetMobNames = {"Sky Soldier [Lv. 800]", "Cloud Warrior [Lv. 900]"}
                             elseif currentMat:find("Gunpowder") then currentTargetMobNames = {"Naval personnel [Lv. 1200]", "Nautical soldier [Lv. 1350]", "Naval soldier [Lv. 1400]"}
                             elseif currentMat:find("Undead's Ooze") then currentTargetMobNames = {"Zombie [Lv. 1500]"}
@@ -1562,7 +1675,7 @@ function HuDy.StartAutoFarm()
                             elseif currentMat:find("Ice Crystal") then currentTargetMobNames = {"Azlan [Lv. 3300]"}
                             elseif currentMat:find("Magma Crystal") then currentTargetMobNames = {"The Volcano [Lv. 3325]"}
                             elseif currentMat:find("Lost Ruby") then currentTargetMobNames = {"Pharaoh [Lv. 3175]"}
-                            elseif currentMat:find("Pile of Bones") then currentTargetMobNames = {"Skull Pirate [Lv. 3025]"}
+                            elseif currentMat:find("Pile of Bones") then currentTargetMobNames = {"Skull Pirate [Lv. 3050]"}
                             elseif currentMat:find("Dragon's Orb") or currentMat:find("Dragon' Orb") then currentTargetMobNames = {"Elite Skeleton [Lv. 3075]"}
                             elseif currentMat:find("Lucidus's Totem") then currentTargetMobNames = {"Vice Admiral [Lv. 3500]"}
                             elseif currentMat:find("Dark Beard's Totem") then currentTargetMobNames = {"Dark Beard Servant [Lv. 3400]"}
@@ -1799,7 +1912,7 @@ function HuDy.StartAutoFarm()
                                             pcall(function() func:InvokeServer("take", guess) end)
                                             task.wait(0.3)
                                             if HuDy.CheckCorrectQuest(data.MobName) then 
-                                                data.QuestName = guess -- Cache láº¡i tÃªn Ä‘Ãºng
+                                                data.QuestName = guess -- Cache lại tên đúng
                                                 found = true
                                                 break 
                                             end 
@@ -1812,106 +1925,160 @@ function HuDy.StartAutoFarm()
                         end
                     end
                 else
-                    -- ÄÃ£ cÃ³ Ä‘Ãºng nhiá»‡m vá»¥ -> TÃ¬m quÃ¡i vÃ  táº¥n cÃ´ng
-                    local mob, mobRoot = HuDy.FindMob(data.MobName)
-                    if mob and mobRoot then
-                        local distance = HuDy.Flags.FarmDistance or 8
-                        local mode = HuDy.Flags.FarmMode or "Above"
+                    -- Đã có đúng nhiệm vụ / quái mục tiêu -> Tìm quái và tấn công (Hỗ trợ Gom quái thông minh theo bãi)
+                    local distance = HuDy.Flags.FarmDistance or 8
+                    local mode = HuDy.Flags.FarmMode or "Above"
+                    local spotPos = (data.CFrame and data.CFrame.Position) or (hrp and hrp.Position)
+                    
+                    local isBossTarget = false
+                    local cleanName = string.lower(string.match(data.MobName, "^(.-)%s*%[") or data.MobName):match("^%s*(.-)%s*$")
+                    local bossIgnoreList = {"sea king", "tentacle", "hydra", "drakenfyr", "crusher", "abyssal", "ghost ship"}
+                    for _, bName in ipairs(bossIgnoreList) do
+                        if cleanName:find(bName) then isBossTarget = true break end
+                    end
+
+                    local spotMobs = (not isBossTarget) and HuDy.GetSpotMobs(data.MobName, spotPos, 350) or {}
+                    
+                    -- LOGIC GOM QUÁI THÔNG MINH: Đánh từng con trong bãi để kéo aggro, chọn 1 con làm trung tâm để quái tự gom lại
+                    if HuDy.Flags.BringMobs and not isBossTarget and #spotMobs >= 2 then
+                        -- 1. Kiểm tra hoặc chọn Con Quái Trung Tâm (Center Mob)
+                        local centerMob = HuDy.CurrentCenterMob
+                        local centerRoot = HuDy.CurrentCenterRoot
+                        local isCenterValid = false
                         
-                        local basePos = mobRoot.Position + Vector3.new(0, -2, 0)
-                        local targetCFrame
-                        if mode == "Above" then
-                            targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                        elseif mode == "Behind" then
-                            targetCFrame = (mobRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
-                        elseif mode == "Below" then
-                            targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
-                        else
-                            targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                        end
-                        
-                        local targetMagnitude = (hrp.Position - mobRoot.Position).Magnitude
-                        
-                        -- Gom quái xung quanh lại vị trí con quái mục tiêu (Hitbox extension & CFrame sync - Tốc độ mượt mà)
-                        if HuDy.Flags.BringMobs then
-                            local nowBring = tick()
-                            if not HuDy.LastFarmBringTime or (nowBring - HuDy.LastFarmBringTime) >= 0.35 then
-                                HuDy.LastFarmBringTime = nowBring
-                                pcall(function()
-                                    local SIZE_HITBOX = Vector3.new(12, 12, 12)
-                                    local mobOffset = CFrame.new(0, 0, -1)
-                                    local targetBase = string.lower(string.match(string.match(data.MobName, "^(.-)%s*%[") or data.MobName, "^%s*(.-)%s*$"))
-                                    local spotPos = data.CFrame and data.CFrame.Position or mobRoot.Position
-                                    
-                                    local monsterFolder = workspace:FindFirstChild("Monster")
-                                    local primaryFolders = {
-                                        monsterFolder and monsterFolder:FindFirstChild("Mon"),
-                                        monsterFolder and monsterFolder:FindFirstChild("Boss"),
-                                        monsterFolder,
-                                        workspace:FindFirstChild("SeaMonster"),
-                                        workspace:FindFirstChild("Boss"),
-                                        workspace:FindFirstChild("MOB"),
-                                        workspace:FindFirstChild("Mobs"),
-                                        workspace:FindFirstChild("Alive"),
-                                        workspace:FindFirstChild("Enemies")
-                                    }
-                                    
-                                    for _, folder in ipairs(primaryFolders) do
-                                        if folder then
-                                            for _, otherMob in ipairs(folder:GetChildren()) do
-                                                if otherMob:IsA("Model") then
-                                                    local otherHum = otherMob:FindFirstChildOfClass("Humanoid")
-                                                    local otherRoot = otherMob:FindFirstChild("HumanoidRootPart")
-                                                    
-                                                    if otherHum and otherRoot then
-                                                        local mBase = string.lower(string.match(string.match(otherMob.Name, "^(.-)%s*%[") or otherMob.Name, "^%s*(.-)%s*$"))
-                                                        if mBase == targetBase then
-                                                            if otherHum.Health > 0 then
-                                                                if (otherRoot.Position - spotPos).Magnitude <= 350 then
-                                                                    if otherRoot.CanCollide then otherRoot.CanCollide = false end
-                                                                    if otherRoot.Size ~= SIZE_HITBOX then otherRoot.Size = SIZE_HITBOX end
-                                                                    if not otherRoot.Anchored then otherRoot.Anchored = true end
-                                                                    
-                                                                    otherHum.WalkSpeed = 0
-                                                                    otherHum.JumpPower = 0
-                                                                    otherHum.AutoRotate = false
-                                                                    
-                                                                    if otherMob ~= mob then
-                                                                        otherRoot.CFrame = mobRoot.CFrame * mobOffset
-                                                                    end
-                                                                end
-                                                            else
-                                                                pcall(function() otherMob:Destroy() end)
-                                                            end
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end
-                                end)
+                        if centerMob and centerMob.Parent and centerRoot and centerRoot.Parent then
+                            local hum = centerMob:FindFirstChildOfClass("Humanoid")
+                            if hum and hum.Health > 0 then
+                                local mBase = string.lower(string.match(string.match(centerMob.Name, "^(.-)%s*%[") or centerMob.Name, "^%s*(.-)%s*$"))
+                                if mBase == cleanName then
+                                    isCenterValid = true
+                                end
                             end
                         end
-
-                        -- Loáº¡i bá» Deadzone khoáº£ng cÃ¡ch, liÃªn tá»¥c giá»¯ vá»‹ trÃ­ vÃ  tung chiÃªu
-                        HuDy.TP(targetCFrame, mobRoot.Position)
-                        if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(mobRoot.Position, mobRoot) and not HuDy.OpeRoomCasting then
-                            HuDy.CastOpeRoom(mobRoot.CFrame, mobRoot)
+                        
+                        if not isCenterValid then
+                            local bestMob = spotMobs[1]
+                            centerMob = bestMob.Model
+                            centerRoot = bestMob.Root
+                            HuDy.CurrentCenterMob = centerMob
+                            HuDy.CurrentCenterRoot = centerRoot
+                            HuDy.AggroedMobs = HuDy.AggroedMobs or {}
+                            HuDy.AggroedMobs[centerMob] = tick()
                         end
-                        HuDy.Attack(mobRoot)
-                    else
-                        -- KhÃ´ng tÃ¬m tháº¥y quÃ¡i -> Bay lÃªn cao táº¡i data.CFrame Ä‘á»ƒ láº¥y táº§m nhÃ¬n quÃ©t bÃ£i quÃ¡i (Map Loading / Wait Spawn)
-                        if data.CFrame then
-                            HuDy.TP(data.CFrame * CFrame.new(0, 0, 0)) 
+                        
+                        -- 2. Quét tìm các con quái khác trong bãi chưa bị đánh để kéo aggro
+                        local unaggroMobs = {}
+                        for _, sm in ipairs(spotMobs) do
+                            if sm.Model ~= centerMob then
+                                local distToCenter = (sm.Root.Position - centerRoot.Position).Magnitude
+                                -- Nếu quái ở xa con trung tâm (> 18 studs), kiểm tra xem đã đánh nó chưa
+                                if distToCenter > 18 then
+                                    local lastAggro = HuDy.AggroedMobs and HuDy.AggroedMobs[sm.Model]
+                                    if not lastAggro or (tick() - lastAggro > 8) then
+                                        table.insert(unaggroMobs, sm)
+                                    end
+                                end
+                            end
+                        end
+                        
+                        -- 3. Tiến hành kéo hoặc dồn dame:
+                        if #unaggroMobs > 0 then
+                            -- Còn quái ở xa chưa aggro -> Lướt nhanh qua đánh 1 hit để kéo nó chạy về phía player & trung tâm
+                            local pullTarget = unaggroMobs[1]
+                            local pullPos = pullTarget.Root.Position + Vector3.new(0, -2, 0)
+                            local pullCFrame
+                            if mode == "Above" then
+                                pullCFrame = CFrame.new(pullPos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            elseif mode == "Behind" then
+                                pullCFrame = (pullTarget.Root.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
+                            else
+                                pullCFrame = CFrame.new(pullPos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            end
+                            
+                            HuDy.TP(pullCFrame, pullTarget.Root.Position)
+                            if pullTarget.Root.CanCollide then pullTarget.Root.CanCollide = false end
+                            if pullTarget.Root.Anchored then pullTarget.Root.Anchored = false end
+                            
+                            HuDy.Attack(pullTarget.Root)
+                            HuDy.AggroedMobs[pullTarget.Model] = tick()
+                            task.wait(0.12)
                         else
-                            HuDy.StopTP()
+                            -- Toàn bộ quái trong bãi đã aggro -> Đứng vững tại Con Trung Tâm để toàn bộ quái dồn lại 1 chỗ
+                            local basePos = centerRoot.Position + Vector3.new(0, -2, 0)
+                            local targetCFrame
+                            if mode == "Above" then
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            elseif mode == "Behind" then
+                                targetCFrame = (centerRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
+                            elseif mode == "Below" then
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
+                            else
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            end
+                            
+                            -- Mở rộng Hitbox và tắt va chạm để các con quái lồng vào nhau tại trung tâm, dính trọn AOE
+                            local SIZE_HITBOX = Vector3.new(15, 15, 15)
+                            for _, sm in ipairs(spotMobs) do
+                                if sm.Root then
+                                    if sm.Root.CanCollide then sm.Root.CanCollide = false end
+                                    if sm.Root.Size ~= SIZE_HITBOX then sm.Root.Size = SIZE_HITBOX end
+                                    if sm.Root.Anchored then sm.Root.Anchored = false end
+                                end
+                            end
+                            
+                            HuDy.TP(targetCFrame, centerRoot.Position)
+                            if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(centerRoot.Position, centerMob) and not HuDy.OpeRoomCasting then
+                                HuDy.CastOpeRoom(centerRoot.CFrame, centerMob)
+                            end
+                            HuDy.Attack(centerRoot)
+                        end
+                    else
+                        -- Đánh đơn lẻ (Target từng con / Boss hoặc khi tắt Gom quái / chỉ còn 1 con)
+                        local mob, mobRoot = nil, nil
+                        if #spotMobs > 0 then
+                            mob, mobRoot = spotMobs[1].Model, spotMobs[1].Root
+                        else
+                            mob, mobRoot = HuDy.FindMob(data.MobName)
+                        end
+                        
+                        if mob and mobRoot then
+                            local basePos = mobRoot.Position + Vector3.new(0, -2, 0)
+                            local targetCFrame
+                            if mode == "Above" then
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            elseif mode == "Behind" then
+                                targetCFrame = (mobRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
+                            elseif mode == "Below" then
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
+                            else
+                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            end
+                            
+                            HuDy.TP(targetCFrame, mobRoot.Position)
+                            if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(mobRoot.Position, mob) and not HuDy.OpeRoomCasting then
+                                HuDy.CastOpeRoom(mobRoot.CFrame, mob)
+                            end
+                            HuDy.Attack(mobRoot)
+                        else
+                            -- Không tìm thấy quái -> Bay lên cao tại data.CFrame để đợi quái spawn
+                            HuDy.CurrentCenterMob = nil
+                            HuDy.CurrentCenterRoot = nil
+                            HuDy.AggroedMobs = {}
+                            if data.CFrame then
+                                HuDy.TP(data.CFrame * CFrame.new(0, 0, 0)) 
+                            else
+                                HuDy.StopTP()
+                            end
                         end
                     end
                 end
             end)
         end
         HuDy.FarmLoopRunning = false
-        HuDy.StopTP() -- Táº¯t thÃ¬ rÆ¡i xuá»‘ng Ä‘áº¥t
+        HuDy.CurrentCenterMob = nil
+        HuDy.CurrentCenterRoot = nil
+        HuDy.AggroedMobs = {}
+        HuDy.StopTP() -- Tắt thì rơi xuống đất
     end)
 end
 
@@ -2559,7 +2726,7 @@ function HuDy.StartAutoStats()
         end
     end)
 end
-HuDy.StartAutoStats() -- VÃ²ng láº·p ngáº§m dá»±a theo cá» (Flags)
+HuDy.StartAutoStats() -- VÃ²ng láº·p ngáº§m dá»±a theo cá»  (Flags)
 
 -- ==============================================================================
 -- 4.5 AUTO HAKI MODULE (Buso & Ken)
@@ -2594,14 +2761,13 @@ function HuDy.StartAutoHaki()
 end
 HuDy.StartAutoHaki()
 
--- Standalone Bring Mobs Loop (Chạy tốc độ ổn định, gom quái mượt mà)
+-- Standalone Bring Mobs Loop (Hỗ trợ mở rộng Hitbox & Tắt va chạm để quái gom mượt mà)
 function HuDy.StartBringMobsLoop()
     task.spawn(function()
-        local SIZE_HITBOX = Vector3.new(12, 12, 12)
-        local mobOffset = CFrame.new(0, 0, -1)
+        local SIZE_HITBOX = Vector3.new(15, 15, 15)
         
-        while task.wait(0.35) do
-            if HuDy.Flags.BringMobs and (HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3) then
+        while task.wait(0.5) do
+            if HuDy.Flags.BringMobs and (HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoFarmMaterial or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3) then
                 pcall(function()
                     local data = nil
                     if HuDy.Flags.AutoFarm or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3 then
@@ -2615,55 +2781,13 @@ function HuDy.StartBringMobsLoop()
                     
                     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     local spotPos = data.CFrame and data.CFrame.Position or (hrp and hrp.Position or Vector3.zero)
-                    local monsterFolder = workspace:FindFirstChild("Monster")
-                    local primaryFolders = {
-                        monsterFolder and monsterFolder:FindFirstChild("Mon"),
-                        monsterFolder and monsterFolder:FindFirstChild("Boss"),
-                        monsterFolder,
-                        workspace:FindFirstChild("SeaMonster"),
-                        workspace:FindFirstChild("Boss"),
-                        workspace:FindFirstChild("MOB"),
-                        workspace:FindFirstChild("Mobs"),
-                        workspace:FindFirstChild("Alive"),
-                        workspace:FindFirstChild("Enemies")
-                    }
+                    local spotMobs = HuDy.GetSpotMobs(data.MobName, spotPos, 350)
                     
-                    for _, folder in ipairs(primaryFolders) do
-                        if folder then
-                            for _, otherMob in ipairs(folder:GetDescendants()) do
-                                if otherMob:IsA("Model") then
-                                    local otherHum = otherMob:FindFirstChildOfClass("Humanoid")
-                                    local otherRoot = otherMob:FindFirstChild("HumanoidRootPart")
-                                    
-                                    if otherHum and otherRoot then
-                                        local mBase = string.lower(string.match(string.match(otherMob.Name, "^(.-)%s*%[") or otherMob.Name, "^%s*(.-)%s*$"))
-                                        local targetBase = string.lower(string.match(string.match(data.MobName, "^(.-)%s*%[") or data.MobName, "^%s*(.-)%s*$"))
-                                        if mBase == targetBase then
-                                            -- KHÔNG ÁP DỤNG LÚN MOD HAY KHỐNG CHẾ CHO TENTACLE / KRAKEN (Tránh gây bug)
-                                            if mBase == "tentacle" or mBase == "kraken" then continue end
-                                            
-                                            if otherHum.Health > 0 then
-                                                if (otherRoot.Position - spotPos).Magnitude <= 350 then
-                                                    if otherRoot.CanCollide then otherRoot.CanCollide = false end
-                                                    if otherRoot.Size ~= SIZE_HITBOX then otherRoot.Size = SIZE_HITBOX end
-                                                    if not otherRoot.Anchored then otherRoot.Anchored = true end
-                                                    
-                                                    otherHum.WalkSpeed = 0
-                                                    otherHum.JumpPower = 0
-                                                    otherHum.AutoRotate = false
-                                                    
-                                                    local _, mobRoot = HuDy.FindMob(data.MobName)
-                                                    if mobRoot then
-                                                        otherRoot.CFrame = mobRoot.CFrame * mobOffset
-                                                    end
-                                                end
-                                            else
-                                                pcall(function() otherMob:Destroy() end)
-                                            end
-                                        end
-                                    end
-                                end
-                            end
+                    for _, sm in ipairs(spotMobs) do
+                        if sm.Root then
+                            if sm.Root.CanCollide then sm.Root.CanCollide = false end
+                            if sm.Root.Size ~= SIZE_HITBOX then sm.Root.Size = SIZE_HITBOX end
+                            if sm.Root.Anchored then sm.Root.Anchored = false end
                         end
                     end
                 end)
@@ -3334,6 +3458,15 @@ MainTab:Toggle({
         if state then HuDy.StartAutoFarm() else HuDy.StopTP() end
     end,
 })
+MainTab:Toggle({
+    Title = "Auto Group Mobs (Gom quái bãi)",
+    Flag = "BringMobs",
+    Value = (HuDy.Flags.BringMobs ~= nil) and HuDy.Flags.BringMobs or true,
+    Callback = function(state)
+        HuDy.Flags.BringMobs = state
+        HuDy.SaveConfig()
+    end,
+})
 
 if game.PlaceId == 4520749081 or game.PlaceId == 14619717013 then
     MainTab:Toggle({
@@ -3449,6 +3582,7 @@ local MatListSea2 = {
     "Magma Crystal (Lv 3325)", 
     "Essence of Fire (Lv 3200)", 
     "Lost Ruby (Lv 3175)", 
+    "Thief's Rag (Lv 3125)", 
     "Pile of Bones (Lv 3050)", 
     "Dragon's Orb (Lv 3100)", 
     "Lucidus's Totem (Lv 3500)", 
