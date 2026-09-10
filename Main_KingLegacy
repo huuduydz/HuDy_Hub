@@ -99,6 +99,7 @@ local HuDy = {
         AutoBuso = true,
         AutoKen = true,
         BringMobs = true,
+        AutoOpeRoom = true,
         AntiMod = true,
         AutoRejoin = true,
         AutoHopTree = false,
@@ -176,32 +177,128 @@ function HuDy.DisconnectAll()
 end
 
 -- ==============================================================================
--- 2. MOVEMENT & TELEPORT MODULE (Dá»‹ch chuyá»ƒn tá»©c thÃ¬)
+-- 2. MOVEMENT & TELEPORT MODULE (Dịch chuyển tức thì & Anti-Rubberband)
 -- ==============================================================================
-function HuDy.TP(targetCFrame, lookAtPos)
+HuDy.CurrentTPTarget = nil
+HuDy.CurrentTPLookAt = nil
+HuDy.IsStandingNormal = false
+HuDy.IsTPLocked = false
+
+-- Khóa vị trí theo từng khung hình (Heartbeat + Stepped Noclip Anti-Rubberband)
+if not HuDy.TPHeartbeatConnected then
+    HuDy.TPHeartbeatConnected = true
+    
+    -- 1. Noclip khi bay/farm: Chỉ tắt va chạm khi đang bay hoặc né chiêu, KHÔNG tắt khi đang đứng bình thường trên sàn thang máy
+    RunService.Stepped:Connect(function()
+        if HuDy.IsTPLocked and HuDy.CurrentTPTarget and not HuDy.IsStandingNormal then
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- 2. Khóa CFrame mỗi nhịp Heartbeat (60 FPS): Giữ vị trí vững chắc, không giật lùi
+    RunService.Heartbeat:Connect(function()
+        if HuDy.IsTPLocked and HuDy.CurrentTPTarget then
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hrp and hum and hum.Health > 0 then
+                -- Triệt tiêu hoàn toàn mọi quán tính trọng lực và gia tốc
+                pcall(function()
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    hrp.Velocity = Vector3.new(0, 0, 0)
+                    hrp.RotVelocity = Vector3.new(0, 0, 0)
+                end)
+                
+                -- Ghim chặt CFrame
+                local targetCF = HuDy.CurrentTPTarget
+                if HuDy.CurrentTPLookAt then
+                    targetCF = CFrame.new(targetCF.Position, HuDy.CurrentTPLookAt)
+                end
+                hrp.CFrame = targetCF
+                
+                -- Đảm bảo tuyệt đối không bao giờ bị khóa nằm ngang
+                if hum.PlatformStand then
+                    hum.PlatformStand = false
+                end
+            end
+        end
+    end)
+end
+
+function HuDy.TP(targetCFrame, lookAtPos, isStandingNormal)
     local char = LocalPlayer.Character
     if not char then return end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChild("Humanoid")
     if not hrp then return end
     
-    -- Anti-Fall: Giá»¯ lÆ¡ lá»­ng khi Ä‘ang farm trÃªn cao
-    if not hrp:FindFirstChild("HuDyBodyVelocity") then
-        local bv = Instance.new("BodyVelocity")
-        bv.Name = "HuDyBodyVelocity"
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bv.Parent = hrp
+    -- Cập nhật mục tiêu khóa vị trí
+    HuDy.CurrentTPTarget = targetCFrame
+    HuDy.CurrentTPLookAt = lookAtPos
+    HuDy.IsStandingNormal = isStandingNormal or false
+    HuDy.IsTPLocked = true
+    
+    -- Anti-Fall: Giữ lơ lửng khi đang trên cao (Nếu đang đứng bình thường trên sàn thì không dùng BV)
+    local bv = hrp:FindFirstChild("HuDyBodyVelocity")
+    if not isStandingNormal then
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.Name = "HuDyBodyVelocity"
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Parent = hrp
+        else
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        end
+    else
+        if bv then bv:Destroy() end
     end
     
+    pcall(function()
+        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        hrp.Velocity = Vector3.new(0, 0, 0)
+        hrp.RotVelocity = Vector3.new(0, 0, 0)
+    end)
+    
     if hum then 
-        hum.AutoRotate = false 
-        hum.PlatformStand = true -- Táº¯t lá»±c tá»± cÃ¢n báº±ng cá»§a Humanoid Ä‘á»ƒ nhÃ¢n váº­t náº±m im 90 Ä‘á»™
+        -- TUYỆT ĐỐI KHÔNG DÙNG PlatformStand = true (Vì sẽ làm nhân vật ngã nằm ngang ra sàn/trên không)
+        hum.PlatformStand = false
+        if isStandingNormal then
+            hum.AutoRotate = true
+            pcall(function()
+                hum:ChangeState(Enum.HumanoidStateType.Running)
+            end)
+        else
+            hum.AutoRotate = false
+        end
+        pcall(function()
+            hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        end)
     end
-    hrp.CFrame = targetCFrame
+    
+    if lookAtPos then
+        hrp.CFrame = CFrame.new(targetCFrame.Position, lookAtPos)
+    else
+        hrp.CFrame = targetCFrame
+    end
 end
 
 function HuDy.StopTP()
+    HuDy.IsTPLocked = false
+    HuDy.CurrentTPTarget = nil
+    HuDy.CurrentTPLookAt = nil
     local char = LocalPlayer.Character
     if char then
         local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -217,6 +314,11 @@ function HuDy.StopTP()
         if hum then 
             hum.AutoRotate = true 
             hum.PlatformStand = false
+            pcall(function()
+                hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+                hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+                hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+            end)
         end
     end
 end
@@ -288,33 +390,33 @@ local LevelDataSea2 = {
     { MinLv = 2550, MaxLv = 2599, NpcName = "Japan Quest 3", QuestName = "Kill 1 Duke", MobName = "Duke [Lv. 2550]", CFrame = CFrame.new(-5284.7, 99.8, -101.1) },
     { MinLv = 2600, MaxLv = 2649, NpcName = "Japan Quest 3", QuestName = "Kill 1 Magician", MobName = "Magician [Lv. 2600]", CFrame = CFrame.new(-5284.7, 99.8, -101.1) },
     { MinLv = 2650, MaxLv = 2699, NpcName = "Japan Quest 3", QuestName = "Kill 1 Kitsune Samurai", MobName = "Kitsune Samurai [Lv. 2650]", CFrame = CFrame.new(-5284.7, 99.8, -101.1) },
-    { MinLv = 2700, MaxLv = 2749, NpcName = "Japan Quest 4", QuestName = "Kill 4 Elite Beast Pirates", MobName = "Elite Beast Pirate [Lv. 2700]", CFrame = CFrame.new(-4237.6, 29.2, 1311.1) },
-    { MinLv = 2750, MaxLv = 2799, NpcName = "Japan Quest 4", QuestName = "Kill 1 Bear Man", MobName = "Bear Man [Lv. 2750]", CFrame = CFrame.new(-4237.6, 29.2, 1311.1) },
-    { MinLv = 2800, MaxLv = 2849, NpcName = "Japan Quest 4", QuestName = "Kill 1 Bean", MobName = "Bean [Lv. 2800]", CFrame = CFrame.new(-4237.6, 29.2, 1311.1) },
-    { MinLv = 2850, MaxLv = 2899, NpcName = "Japan Quest 5", QuestName = "Kill 1 Meji", MobName = "Meji [Lv. 2850]", CFrame = CFrame.new(-5552.5, 57.3, 971.4) },
-    { MinLv = 2900, MaxLv = 2949, NpcName = "Japan Quest 5", QuestName = "Kill 1 Petra", MobName = "Petra [Lv. 2900]", CFrame = CFrame.new(-5552.5, 57.3, 971.4) },
-    { MinLv = 2950, MaxLv = 2999, NpcName = "Japan Quest 6", QuestName = "Kill 1 Kappa", MobName = "Kappa [Lv. 2950]", CFrame = CFrame.new(-5111.4, 57.4, 1888.9) },
-    { MinLv = 3000, MaxLv = 3024, NpcName = "Japan Quest 6", QuestName = "Kill 1 Joey", MobName = "Joey [Lv. 3000]", CFrame = CFrame.new(-5111.4, 57.4, 1888.9) },
+    { MinLv = 2700, MaxLv = 2749, NpcName = "Japan Quest 4", QuestName = "Kill 4 Elite Beast Pirates", MobName = "Elite Beast Pirate [Lv. 2700]", CFrame = CFrame.new(-4477.4, 29.2, 1064.9) },
+    { MinLv = 2750, MaxLv = 2799, NpcName = "Japan Quest 4", QuestName = "Kill 1 Bear Man", MobName = "Bear Man [Lv. 2750]", CFrame = CFrame.new(-4405.1, 29.2, 921.0) },
+    { MinLv = 2800, MaxLv = 2849, NpcName = "Japan Quest 4", QuestName = "Kill 1 Bean", MobName = "Bean [Lv. 2800]", CFrame = CFrame.new(-4105.9, 29.2, 1067.6) },
+    { MinLv = 2850, MaxLv = 2899, NpcName = "Japan Quest 5", QuestName = "Kill 1 Meji", MobName = "Meji [Lv. 2850]", CFrame = CFrame.new(-5353.8, 57.3, 1086.2) },
+    { MinLv = 2900, MaxLv = 2949, NpcName = "Japan Quest 5", QuestName = "Kill 1 Petra", MobName = "Petra [Lv. 2900]", CFrame = CFrame.new(-5738.0, 57.3, 1236.7) },
+    { MinLv = 2950, MaxLv = 2999, NpcName = "Japan Quest 6", QuestName = "Kill 1 Kappa", MobName = "Kappa [Lv. 2950]", CFrame = CFrame.new(-4875.0, 75.0, 1933.9) },
+    { MinLv = 3000, MaxLv = 3024, NpcName = "Japan Quest 6", QuestName = "Kill 1 Joey", MobName = "Joey [Lv. 3000]", CFrame = CFrame.new(-5198.9, 57.3, 2055.3) },
     { MinLv = 3025, MaxLv = 3074, NpcName = "Skull Island Quest", QuestName = "Kill 4 Skull Pirates", MobName = "Skull Pirate [Lv. 3050]", CFrame = CFrame.new(-6382.0, 57.7, 7028.3) },
     { MinLv = 3075, MaxLv = 3099, NpcName = "Skull Island Quest", QuestName = "Kill 1 Elite Skeleton", MobName = "Elite Skeleton [Lv. 3075]", CFrame = CFrame.new(-5889.3, 98.2, 7248.1) },
     { MinLv = 3100, MaxLv = 3124, NpcName = "Dead Tundra", QuestName = "Kill 1 Desert Thief", MobName = "Desert Thief [Lv. 3125]", CFrame = CFrame.new(1375.9, 14.4, 1394.2) },
     { MinLv = 3125, MaxLv = 3149, NpcName = "Dead Tundra", QuestName = "Kill 1 Anubis", MobName = "Anubis [Lv. 3125]", CFrame = CFrame.new(2108.9, 14.4, 956.2) },
     { MinLv = 3150, MaxLv = 3174, NpcName = "Dead Tundra", QuestName = "Kill 1 Pharaoh", MobName = "Pharaoh [Lv. 3175]", CFrame = CFrame.new(1888.4, 48.8, 1711.5) },
     { MinLv = 3175, MaxLv = 3199, NpcName = "Dead Tundra", QuestName = "Kill 1 Flame User", MobName = "Flame User [Lv. 3200]", CFrame = CFrame.new(2036.0, 14.4, 1349.3) },
-    { MinLv = 3200, MaxLv = 3224, NpcName = "Loaf Quest 1", QuestName = "Kill 4 Chess Soldiers", MobName = "Chess Soldier [Lv. 3200]", CFrame = CFrame.new(-627.6, 28.7, 8239.3) },
-    { MinLv = 3225, MaxLv = 3249, NpcName = "Loaf Quest 1", QuestName = "Kill 1 Sunken Vessel", MobName = "Sunken Vessel [Lv. 3225]", CFrame = CFrame.new(-1076.3, 50.9, 8229.5) },
+    { MinLv = 3200, MaxLv = 3224, NpcName = "Loaf Quest 1", QuestName = "Kill 4 Chess Soldiers", MobName = "Chess Soldier [Lv. 3200]", CFrame = CFrame.new(-21.6, 43.8, 8057.1) },
+    { MinLv = 3225, MaxLv = 3249, NpcName = "Loaf Quest 1", QuestName = "Kill 1 Sunken Vessel", MobName = "Sunken Vessel [Lv. 3225]", CFrame = CFrame.new(-954.7, 50.9, 8223.3) },
     { MinLv = 3250, MaxLv = 3274, NpcName = "Loaf Quest 1", QuestName = "Kill 1 Biscuit Man", MobName = "Biscuit Man [Lv. 3250]", CFrame = CFrame.new(-1531.1, 188.6, 8864.9) },
     { MinLv = 3275, MaxLv = 3299, NpcName = "Loaf Quest 2", QuestName = "Kill 1 Dough Master", MobName = "Dough Master [Lv. 3275]", CFrame = CFrame.new(30328.6, 24.8, 93403.8) },
     { MinLv = 3300, MaxLv = 3324, NpcName = "Shred Endangering Quest", QuestName = "Kill 4 Azlan", MobName = "Azlan [Lv. 3300]", CFrame = CFrame.new(-582.8, 56.8, -2586.3) },
     { MinLv = 3325, MaxLv = 3399, NpcName = "Shred Endangering Quest", QuestName = "Kill 4 The Volcano", MobName = "The Volcano [Lv. 3325]", CFrame = CFrame.new(-10.6, 130.3, -3638.4) },
-    { MinLv = 3400, MaxLv = 3424, NpcName = "Skull Pirate Island Quest", QuestName = "Kill 4 Dark Beard Servant", MobName = "Dark Beard Servant [Lv. 3400]", CFrame = CFrame.new(-9526.0, 59.3, -4861.3) },
-    { MinLv = 3425, MaxLv = 3449, NpcName = "Skull Pirate Island Quest", QuestName = "Kill 1 Supreme Swordman", MobName = "Supreme Swordman [Lv. 3425]", CFrame = CFrame.new(-9526.0, 59.3, -4861.3) },
+    { MinLv = 3400, MaxLv = 3424, NpcName = "Skull Pirate Island Quest", QuestName = "Kill 4 Dark Beard Servant", MobName = "Dark Beard Servant [Lv. 3400]", CFrame = CFrame.new(-9214.7, 102.3, -4586.5) },
+    { MinLv = 3425, MaxLv = 3449, NpcName = "Skull Pirate Island Quest", QuestName = "Kill 1 Supreme Swordman", MobName = "Supreme Swordman [Lv. 3425]", CFrame = CFrame.new(-9676.5, 59.2, -4554.5) },
     { MinLv = 3450, MaxLv = 3499, NpcName = "Skull Pirate Island Quest", QuestName = "Kill 1 Sally", MobName = "Sally [Lv. 3450]", CFrame = CFrame.new(-9589.8, 59.3, -5273.3) },
-    { MinLv = 3500, MaxLv = 3524, NpcName = "Soldier Head Quater Quest 1", QuestName = "Kill 5 Vice Admiral", MobName = "Vice Admiral [Lv. 3500]", CFrame = CFrame.new(-9896.3, 37.9, 981.6) },
+    { MinLv = 3500, MaxLv = 3524, NpcName = "Soldier Head Quater Quest 1", QuestName = "Kill 5 Vice Admiral", MobName = "Vice Admiral [Lv. 3500]", CFrame = CFrame.new(-10266.3, 65.5, 434.9) },
     { MinLv = 3525, MaxLv = 3549, NpcName = "Soldier Head Quater Quest 1", QuestName = "Kill 1 Pondere", MobName = "Pondere [Lv. 3525]", CFrame = CFrame.new(-10078.2, 37.7, 1408.0) },
     { MinLv = 3550, MaxLv = 3599, NpcName = "Soldier Head Quater Quest 2", QuestName = "Kill 1 Hefty", MobName = "Hefty [Lv. 3550]", CFrame = CFrame.new(-10592.7, 83.4, 1101.7) },
-    { MinLv = 3600, MaxLv = 3624, NpcName = "Fiore Quest 1", QuestName = "Kill 6 Fiore Gladiator", MobName = "Fiore Gladiator [Lv. 3600]", CFrame = CFrame.new(5070.8, 71.8, -2685.2) },
-    { MinLv = 3625, MaxLv = 3649, NpcName = "Fiore Quest 1", QuestName = "Kill 6 Fiore Fighter", MobName = "Fiore Fighter [Lv. 3625]", CFrame = CFrame.new(5070.8, 71.8, -2685.2) },
+    { MinLv = 3600, MaxLv = 3624, NpcName = "Fiore Quest 1", QuestName = "Kill 6 Fiore Gladiator", MobName = "Fiore Gladiator [Lv. 3600]", CFrame = CFrame.new(5311.3, 71.8, -2860.9) },
+    { MinLv = 3625, MaxLv = 3649, NpcName = "Fiore Quest 1", QuestName = "Kill 6 Fiore Fighter", MobName = "Fiore Fighter [Lv. 3625]", CFrame = CFrame.new(5362.2, 71.8, -2474.6) },
     { MinLv = 3650, MaxLv = 3674, NpcName = "Fiore Quest 2", QuestName = "Kill 7 Fiore Pirate", MobName = "Fiore Pirate [Lv. 3650]", CFrame = CFrame.new(6078.9, 71.8, -3085.7) },
     { MinLv = 3675, MaxLv = 3699, NpcName = "Fiore Quest 2", QuestName = "Kill 1 Lomeo", MobName = "Lomeo [Lv. 3675]", CFrame = CFrame.new(6622.0, 81.1, -2152.4) },
     { MinLv = 3700, MaxLv = 3724, NpcName = "Fiore Quest 3", QuestName = "Kill 1 Prince Aria", MobName = "Prince Aria [Lv. 3700]", CFrame = CFrame.new(6860.2, 158.2, -3715.4) },
@@ -323,7 +425,7 @@ local LevelDataSea2 = {
     { MinLv = 3775, MaxLv = 3799, NpcName = "Fiore Quest 3", QuestName = "Kill 1 Floffy", MobName = "Floffy [Lv. 3775]", CFrame = CFrame.new(7898.7, 461.1, -2400.0) },
     { MinLv = 3800, MaxLv = 3849, NpcName = "Fiore Quest 4", QuestName = "Kill 4 Dead Troupe", MobName = "Dead Troupe [Lv. 3800]", CFrame = CFrame.new(9712.8, 93.2, -4270.4) },
     { MinLv = 3850, MaxLv = 3949, NpcName = "Fiore Quest 4", QuestName = "Kill 4 Dead Troupe Captain", MobName = "Dead Troupe Captain [Lv. 3850]", CFrame = CFrame.new(10196.6, 71.8, -4080.2) },
-    { MinLv = 3950, MaxLv = 3999, NpcName = "Fiore Quest 4", QuestName = "Kill 1 Ryu", MobName = "Ryu [Lv. 3950]", CFrame = CFrame.new(9955.4, 79.9, -4682.6) }
+    { MinLv = 3950, MaxLv = 3999, NpcName = "Fiore Quest 4", QuestName = "Kill 1 Ryu", MobName = "Ryu [Lv. 3950]", CFrame = CFrame.new(9960.8, 71.8, -4713.4) }
 }
 
 
@@ -495,14 +597,51 @@ function HuDy.GetWeapon(customWeaponType)
 end
 
 -- =========================================================================
--- OPE V2 (DF_OpOp) AUTOMATIC ROOM SYSTEM
+-- OPE V2 (DF_OpOp) AUTOMATIC SMART ROOM SYSTEM
 -- =========================================================================
-HuDy.LastOpeRoomTime = 0
-HuDy.LastOpeRoomPosition = nil
+HuDy.LastOpeRoomCastAttempt = 0
 HuDy.LastOpeRoomTarget = nil
 HuDy.OpeRoomCasting = false
 
+function HuDy.GetOpeRoom()
+    local pName = LocalPlayer.Name
+    -- Kiểm tra trực tiếp theo tên trong Workspace (VD: workspace.OpeRoomAidenZestGlow31)
+    local room = workspace:FindFirstChild("OpeRoom" .. pName)
+    if room and room:IsA("BasePart") and room:IsDescendantOf(workspace) then
+        return room
+    end
+    
+    -- Fallback kiểm tra DisplayName nếu có
+    if LocalPlayer.DisplayName and LocalPlayer.DisplayName ~= pName then
+        local r2 = workspace:FindFirstChild("OpeRoom" .. LocalPlayer.DisplayName)
+        if r2 and r2:IsA("BasePart") and r2:IsDescendantOf(workspace) then
+            return r2
+        end
+    end
+    
+    -- Quét các BasePart trong workspace bắt đầu bằng OpeRoom khớp tên player
+    for _, child in ipairs(workspace:GetChildren()) do
+        if child:IsA("BasePart") and child.Name:find("^OpeRoom") then
+            if child.Name:lower():find(pName:lower(), 1, true) then
+                return child
+            end
+        end
+    end
+    return nil
+end
+
 function HuDy.HasOpeV2()
+    -- 1. Nếu workspace đang tồn tại OpeRoom của người chơi -> Chắc chắn 100% có Ope V2
+    if HuDy.GetOpeRoom() then
+        return true
+    end
+    
+    -- 2. Nếu người dùng bật toggle Auto Ope Room trong UI
+    if HuDy.Flags.AutoOpeRoom == true then
+        return true
+    end
+    
+    -- 3. Kiểm tra Tool trong Character hoặc Backpack (hỗ trợ Op-Op, Ope, Kioru, Kioru V2)
     local char = LocalPlayer.Character
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     local tools = {}
@@ -512,29 +651,51 @@ function HuDy.HasOpeV2()
     for _, t in ipairs(tools) do
         local n = string.lower(t.Name)
         local tt = string.lower(t.ToolTip or "")
-        if n:find("op") or n:find("ope") or tt:find("op") or tt:find("ope") then
+        if n:find("op", 1, true) or n:find("ope", 1, true) or n:find("kioru", 1, true) or tt:find("op", 1, true) or tt:find("ope", 1, true) or tt:find("kioru", 1, true) then
             return true, t
         end
     end
     
-    local stats = LocalPlayer:FindFirstChild("PlayerStats") or LocalPlayer:FindFirstChild("Data") or LocalPlayer:FindFirstChild("leaderstats")
-    if stats then
-        for _, v in ipairs(stats:GetChildren()) do
-            if v:IsA("StringValue") then
-                local val = string.lower(v.Value)
-                if val:find("op") or val:find("ope") then
+    -- 4. Quét sâu trong PlayerStats, Data, leaderstats
+    local statsSources = {
+        LocalPlayer:FindFirstChild("PlayerStats"),
+        LocalPlayer:FindFirstChild("Data"),
+        LocalPlayer:FindFirstChild("leaderstats")
+    }
+    for _, stats in ipairs(statsSources) do
+        if stats then
+            for _, v in ipairs(stats:GetDescendants()) do
+                if v:IsA("StringValue") then
+                    local val = string.lower(v.Value)
+                    local vn = string.lower(v.Name)
+                    if val:find("op", 1, true) or val:find("ope", 1, true) or val:find("kioru", 1, true) or vn:find("op", 1, true) or vn:find("ope", 1, true) or vn:find("kioru", 1, true) then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+    
+    -- 5. Quét trong PlayerGui (Skill bar, UI trái quỷ, tên chiêu DF_OpOp)
+    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if pGui then
+        for _, desc in ipairs(pGui:GetDescendants()) do
+            if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("StringValue") then
+                local txt = string.lower(desc.Name .. " " .. (desc:IsA("TextLabel") and desc.Text or (desc:IsA("StringValue") and desc.Value or (desc:IsA("TextButton") and desc.Text or ""))))
+                if txt:find("df_opop", 1, true) or txt:find("op-op", 1, true) or txt:find("opop", 1, true) or txt:find("ope", 1, true) or txt:find("kioru", 1, true) then
                     return true
                 end
             end
         end
     end
     
-    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if pGui then
-        for _, desc in ipairs(pGui:GetDescendants()) do
-            if desc:IsA("TextLabel") or desc:IsA("StringValue") then
-                local txt = string.lower(desc.Name .. " " .. (desc:IsA("TextLabel") and desc.Text or (desc:IsA("StringValue") and desc.Value or "")))
-                if txt:find("df_opop") or txt:find("op-op") or txt:find("ope") then
+    -- 6. Quét trong PlayerCharacters
+    local pc = workspace:FindFirstChild("PlayerCharacters") and workspace.PlayerCharacters:FindFirstChild(LocalPlayer.Name)
+    if pc then
+        for _, desc in ipairs(pc:GetDescendants()) do
+            if desc:IsA("StringValue") then
+                local val = string.lower(desc.Value)
+                if val:find("op", 1, true) or val:find("ope", 1, true) or val:find("kioru", 1, true) then
                     return true
                 end
             end
@@ -545,73 +706,94 @@ function HuDy.HasOpeV2()
 end
 
 function HuDy.IsOpeRoomActive(targetPosition, targetMob)
-    -- 1. Nếu chưa từng bật hoặc đã quá 45s -> Luôn bật lại để duy trì Room liên tục
-    if not HuDy.LastOpeRoomTime or (tick() - HuDy.LastOpeRoomTime >= 45) then
+    -- Lấy instance Room thực tế từ Workspace
+    local room = HuDy.GetOpeRoom()
+    if not room then
+        -- Không có Room nào trong Workspace -> Chưa bật Room
         return false
     end
     
-    -- 2. Nếu vị trí hiện tại đã ra khỏi bán kính Room (> 70 studs) (ví dụ chuyển sang tầng mới) -> Bật lại Room
-    if targetPosition and HuDy.LastOpeRoomPosition then
-        local dist = (targetPosition - HuDy.LastOpeRoomPosition).Magnitude
-        if dist > 70 then
+    -- Xác định tọa độ mục tiêu cần bao phủ
+    local targetPos = nil
+    if typeof(targetPosition) == "Vector3" then
+        targetPos = targetPosition
+    elseif typeof(targetPosition) == "CFrame" then
+        targetPos = targetPosition.Position
+    elseif targetMob then
+        local mRoot = targetMob:FindFirstChild("HumanoidRootPart") or targetMob.PrimaryPart or targetMob:FindFirstChildWhichIsA("BasePart")
+        if mRoot then targetPos = mRoot.Position end
+    end
+    
+    if targetPos then
+        local roomCenter = room.Position
+        -- Kích thước thực tế từ game (Size: 750, 750, 750 => Bán kính 375 studs)
+        local roomRadius = (room.Size.X > 0 and (room.Size.X / 2)) or 375
+        -- Trừ đi 35 studs để tạo biên an toàn, chắc chắn quái nằm gọn trong Room
+        local safeRadius = math.max(50, roomRadius - 35)
+        local dist = (targetPos - roomCenter).Magnitude
+        
+        if dist <= safeRadius then
+            -- Quái / mục tiêu đã nằm trọn trong Room -> Đang Active, không mở lại
+            return true
+        else
+            -- Quái nằm ngoài bán kính Room -> Room không bao phủ được -> Cần mở Room mới tại mục tiêu
             return false
         end
     end
     
+    -- Nếu không truyền targetPos, chỉ cần Room tồn tại là coi như Active
     return true
 end
 
 function HuDy.CastOpeRoom(targetCFrame, targetMob)
-    -- Đảm bảo cooldown tối thiểu 3.2s giữa các lần niệm Room
-    if HuDy.OpeRoomCasting or (tick() - (HuDy.LastOpeRoomTime or 0) < 3.2) then return end
+    -- Cooldown tối thiểu 2.0s giữa các lần gửi remote để server kịp spawn Room
+    if HuDy.OpeRoomCasting or (tick() - (HuDy.LastOpeRoomCastAttempt or 0) < 2.0) then return end
     
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local targetPos = typeof(targetCFrame) == "CFrame" and targetCFrame.Position or (typeof(targetCFrame) == "Vector3" and targetCFrame or (hrp and hrp.Position))
+    local targetPos = (typeof(targetCFrame) == "CFrame" and targetCFrame.Position)
+        or (typeof(targetCFrame) == "Vector3" and targetCFrame)
+        or (targetMob and (targetMob:FindFirstChild("HumanoidRootPart") or targetMob.PrimaryPart) and (targetMob:FindFirstChild("HumanoidRootPart") or targetMob.PrimaryPart).Position)
+        or (hrp and hrp.Position)
     
+    -- Nếu Room thực tế trong Workspace đã bao phủ vị trí mục tiêu -> Không cần cast
     if targetPos and HuDy.IsOpeRoomActive(targetPos, targetMob) then return end
+    
     HuDy.OpeRoomCasting = true
+    HuDy.LastOpeRoomCastAttempt = tick()
     
     task.spawn(function()
         pcall(function()
             local chest = ReplicatedStorage:FindFirstChild("Chest")
             local skillAction = chest and chest:FindFirstChild("Remotes") and chest.Remotes:FindFirstChild("Functions") and chest.Remotes.Functions:FindFirstChild("SkillAction")
             if skillAction then
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local targetHit = (typeof(targetCFrame) == "CFrame" and targetCFrame) or (hrp and hrp.CFrame) or CFrame.new()
+                local hitCF = (typeof(targetCFrame) == "CFrame" and targetCFrame)
+                    or (targetPos and CFrame.new(targetPos))
+                    or (hrp and hrp.CFrame)
+                    or CFrame.new()
                 
-                local hasOpe, opeTool = HuDy.HasOpeV2()
-                if opeTool and opeTool.Parent ~= char and char:FindFirstChild("Humanoid") then
-                    char.Humanoid:EquipTool(opeTool)
-                end
-                
-                -- 1. Bắn song song Down + Up qua task.spawn để không bị InvokeServer yield chặn luồng
+                -- Bắn song song Down + Up độc lập qua task.spawn không có task.wait để không bị kẹt Ope
                 task.spawn(function()
                     pcall(function()
                         skillAction:InvokeServer("DF_OpOp_Z", {
-                            MouseHit = targetHit,
+                            MouseHit = hitCF,
                             Type = "Down"
                         })
                     end)
                 end)
-                
                 task.spawn(function()
-                    task.wait(0.02)
                     pcall(function()
                         skillAction:InvokeServer("DF_OpOp_Z", {
-                            MouseHit = targetHit,
+                            MouseHit = hitCF,
                             Type = "Up"
                         })
                     end)
                 end)
                 
-                HuDy.LastOpeRoomTime = tick()
-                HuDy.LastOpeRoomPosition = targetHit.Position
                 HuDy.LastOpeRoomTarget = targetMob
             end
         end)
-        task.wait(0.5)
+        task.wait(0.3)
         HuDy.OpeRoomCasting = false
     end)
 end
@@ -1266,6 +1448,226 @@ function HuDy.GetSea3MissingMaterialData()
     return nil
 end
 
+-- ==============================================================================
+-- LOG & TREE FARMING SYSTEM (Anti-Stuck 10s, Blacklist, Anti-Wooden-House Filter)
+-- ==============================================================================
+HuDy.CurrentTree = nil
+HuDy.CurrentTreeRoot = nil
+HuDy.CurrentTreeStartTime = 0
+HuDy.BlacklistedTrees = {}
+
+local function isBuildingOrProp(inst)
+    if not inst then return false end
+    local invalidKeywords = {
+        "house", "building", "home", "roof", "wall", "floor", "door", "fence", "dock",
+        "bridge", "shop", "ship", "boat", "pillar", "table", "chair", "furniture", "pot",
+        "ladder", "stair", "gate", "prop", "room", "tower", "pagoda", "castle", "temple",
+        "lamp", "lantern", "bench", "barrel", "crate", "chest", "sign", "light", "stage",
+        "statue", "well", "cart", "wagon", "pavilion", "chimney", "window", "shed", "hut",
+        "inn", "tavern", "dojo", "barrier", "frame", "railing", "balcony", "deck", "plank",
+        "base", "platform", "terrain", "ground", "path", "street", "road"
+    }
+    
+    local cur = inst
+    for _ = 1, 6 do
+        if not cur or cur == workspace then break end
+        local nameLower = cur.Name:lower()
+        for _, kw in ipairs(invalidKeywords) do
+            if nameLower:find(kw, 1, true) then
+                return true
+            end
+        end
+        cur = cur.Parent
+    end
+    return false
+end
+
+local function getTreeRootPart(treeInst)
+    if not treeInst then return nil end
+    local root = nil
+    if treeInst:IsA("Model") then
+        root = treeInst:FindFirstChild("Wood") 
+            or treeInst:FindFirstChild("Trunk") 
+            or treeInst:FindFirstChild("Stem")
+            or treeInst:FindFirstChild("Log")
+            or treeInst:FindFirstChild("HumanoidRootPart") 
+            or treeInst.PrimaryPart
+        if not root then
+            for _, child in ipairs(treeInst:GetChildren()) do
+                if child:IsA("BasePart") then
+                    local cName = child.Name:lower()
+                    if not cName:find("leave", 1, true) and not cName:find("foliage", 1, true) then
+                        root = child
+                        break
+                    end
+                end
+            end
+        end
+    elseif treeInst:IsA("BasePart") then
+        root = treeInst
+    end
+    
+    if not root or not root:IsA("BasePart") then return nil end
+    
+    -- Loại bỏ lá / cành nếu bị nhận nhầm
+    local rName = root.Name:lower()
+    if rName:find("leave", 1, true) or rName:find("foliage", 1, true) then
+        return nil
+    end
+    
+    -- Kiểm tra kích thước: Tránh sàn/tường nhà gỗ to bất thường
+    if root.Size.X > 30 or root.Size.Z > 30 or root.Size.Y > 100 then
+        return nil
+    end
+    
+    -- Kiểm tra độ trong suốt (Cây còn tồn tại)
+    if root.Transparency >= 1 then
+        return nil
+    end
+    
+    -- Kiểm tra máu nếu là Model có Humanoid
+    local hum = treeInst:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Health <= 0 then
+        return nil
+    end
+    
+    return root
+end
+
+function HuDy.ChopTree(playerHrp)
+    local hrp = playerHrp or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart"))
+    local myPos = hrp and hrp.Position or Vector3.zero
+    local now = tick()
+    
+    -- 1. Dọn dẹp blacklist đã hết hạn (> 60s)
+    for k, expireTime in pairs(HuDy.BlacklistedTrees) do
+        if now >= expireTime then
+            HuDy.BlacklistedTrees[k] = nil
+        end
+    end
+    
+    -- 2. Kiểm tra cây hiện tại đang chặt
+    if HuDy.CurrentTree and HuDy.CurrentTree.Parent and HuDy.CurrentTreeRoot and HuDy.CurrentTreeRoot.Parent then
+        local validRoot = getTreeRootPart(HuDy.CurrentTree)
+        if validRoot and validRoot == HuDy.CurrentTreeRoot then
+            -- Cơ chế chống kẹt: Quá 10s chưa chặt xong cây -> Bỏ cây, blacklist và nhảy cây khác
+            if now - HuDy.CurrentTreeStartTime > 10 then
+                local pos = validRoot.Position
+                local posKey = string.format("%d_%d_%d", math.floor(pos.X / 8), math.floor(pos.Y / 8), math.floor(pos.Z / 8))
+                HuDy.BlacklistedTrees[HuDy.CurrentTree] = now + 60
+                HuDy.BlacklistedTrees[posKey] = now + 60
+                print("[Tree Farm] Cay bi ket qua 10s -> Blacklist 60s va chuyen sang cay khac!")
+                HuDy.CurrentTree = nil
+                HuDy.CurrentTreeRoot = nil
+                HuDy.CurrentTreeStartTime = 0
+            else
+                -- Vẫn đang chặt cây hợp lệ trong phạm vi 10s
+                local targetCF = validRoot.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                HuDy.TP(targetCF, validRoot.Position)
+                HuDy.Attack(validRoot)
+                return true
+            end
+        else
+            -- Cây đã gãy / biến mất -> Reset để tìm cây mới
+            HuDy.CurrentTree = nil
+            HuDy.CurrentTreeRoot = nil
+            HuDy.CurrentTreeStartTime = 0
+        end
+    else
+        HuDy.CurrentTree = nil
+        HuDy.CurrentTreeRoot = nil
+        HuDy.CurrentTreeStartTime = 0
+    end
+    
+    -- 3. Tìm cây mới gần nhất (Loại trừ nhà cửa, vật thể gỗ và cây bị blacklist)
+    local bestTree = nil
+    local bestRoot = nil
+    local bestDist = math.huge
+    
+    local function evaluateTree(item)
+        if not item then return end
+        if isBuildingOrProp(item) then return end
+        
+        -- Kiểm tra blacklist theo Instance
+        if HuDy.BlacklistedTrees[item] and HuDy.BlacklistedTrees[item] > now then return end
+        
+        local rootPart = getTreeRootPart(item)
+        if not rootPart then return end
+        if isBuildingOrProp(rootPart) then return end
+        
+        -- Kiểm tra blacklist theo tọa độ
+        local pos = rootPart.Position
+        local posKey = string.format("%d_%d_%d", math.floor(pos.X / 8), math.floor(pos.Y / 8), math.floor(pos.Z / 8))
+        if HuDy.BlacklistedTrees[posKey] and HuDy.BlacklistedTrees[posKey] > now then return end
+        
+        local dist = (pos - myPos).Magnitude
+        if dist < bestDist then
+            bestDist = dist
+            bestTree = item
+            bestRoot = rootPart
+        end
+    end
+    
+    -- Nguồn 1: workspace.Trees hoặc workspace.Tree
+    for _, fName in ipairs({"Trees", "Tree"}) do
+        local f = workspace:FindFirstChild(fName)
+        if f then
+            for _, item in ipairs(f:GetChildren()) do
+                evaluateTree(item)
+            end
+        end
+    end
+    
+    -- Nguồn 2: Sea 2 A - Japan Trees (nếu có)
+    pcall(function()
+        local sea2Trees = workspace:FindFirstChild("Island") 
+            and workspace.Island:FindFirstChild("A - Japan") 
+            and workspace.Island["A - Japan"]:FindFirstChild("A - Japan") 
+            and workspace.Island["A - Japan"]["A - Japan"]:FindFirstChild("Base") 
+            and workspace.Island["A - Japan"]["A - Japan"].Base:FindFirstChild("Trees")
+        if sea2Trees then
+            for _, item in ipairs(sea2Trees:GetChildren()) do
+                evaluateTree(item)
+            end
+        end
+    end)
+    
+    -- Nguồn 3: Quét các Model / Folder tên Tree trong Island / Islands
+    local islandFolder = workspace:FindFirstChild("Island") or workspace:FindFirstChild("Islands")
+    if islandFolder then
+        for _, child in ipairs(islandFolder:GetChildren()) do
+            if child:IsA("Folder") or child:IsA("Model") then
+                local subTrees = child:FindFirstChild("Trees") or child:FindFirstChild("Tree")
+                if subTrees then
+                    for _, item in ipairs(subTrees:GetChildren()) do
+                        evaluateTree(item)
+                    end
+                end
+            end
+        end
+        
+        for _, desc in ipairs(islandFolder:GetDescendants()) do
+            if desc:IsA("Model") and desc.Name:lower():find("tree", 1, true) and not desc.Name:lower():find("tree pot", 1, true) and not desc.Name:lower():find("treepot", 1, true) then
+                evaluateTree(desc)
+            end
+        end
+    end
+    
+    -- 4. Nếu tìm thấy cây hợp lệ
+    if bestTree and bestRoot then
+        HuDy.CurrentTree = bestTree
+        HuDy.CurrentTreeRoot = bestRoot
+        HuDy.CurrentTreeStartTime = now
+        
+        local targetCF = bestRoot.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+        HuDy.TP(targetCF, bestRoot.Position)
+        HuDy.Attack(bestRoot)
+        return true
+    end
+    
+    return false
+end
+
 function HuDy.DoSea3Quest()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -1436,7 +1838,7 @@ function HuDy.DoSea3Quest()
         -- 2. Náº¿u khÃ´ng cÃ³ rÆ°Æ¡ng, tÃ¬m Sea King Ä‘á»ƒ Ä‘Ã¡nh
         local mob, mobRoot = HuDy.FindMob("Sea King")
         if mob and mobRoot then
-            print("[Sea 3 Quest] Äang chiáº¿n Ä‘áº¥u vá»›i Boss Sea King!")
+            print("[Sea 3 Quest] Ä ang chiáº¿n Ä‘áº¥u vá»›i Boss Sea King!")
             HuDy.CurrentFarmMob = mob
             local distance = HuDy.Flags.FarmDistance or 8
             HuDy.TP(mobRoot.CFrame * CFrame.new(0, distance + 30, 0) * CFrame.Angles(math.rad(-90), 0, 0), mobRoot.Position)
@@ -1444,7 +1846,7 @@ function HuDy.DoSea3Quest()
         else
             -- 3. KhÃ´ng cÃ³ Boss & KhÃ´ng cÃ³ RÆ°Æ¡ng -> Server Hop
             print("[Sea 3 Quest] KhÃ´ng tÃ¬m tháº¥y Sea King hoáº·c RÆ°Æ¡ng! KÃ­ch hoáº¡t Server Hop...")
-            if not getattr then warn("KhÃ´ng tÃ¬m tháº¥y Sea King hoáº·c RÆ°Æ¡ng! Äang Hop Server...") end
+            if not getattr then warn("KhÃ´ng tÃ¬m tháº¥y Sea King hoáº·c RÆ°Æ¡ng! Ä ang Hop Server...") end
             pcall(function()
                 if WindUI then WindUI:Notify({ Title = "Sea 3 Quest", Content = "Khong thay Sea King hoac Ruong! Dang hop server...", Icon = "solar:refresh-bold", Duration = 4 }) end
             end)
@@ -1455,7 +1857,7 @@ function HuDy.DoSea3Quest()
     end
     
     if bones < 10 then
-        print("[Sea 3 Quest] Äang farm Pile of Bones (hiá»‡n cÃ³: " .. bones .. "/10)")
+        print("[Sea 3 Quest] Ä ang farm Pile of Bones (hiá»‡n cÃ³: " .. bones .. "/10)")
         -- Farm Pile of Bones á»Ÿ Sea 2 (Skull Pirate)
         local mob, mobRoot = HuDy.FindMob("Skull Pirate")
         if mob and mobRoot then
@@ -1470,36 +1872,11 @@ function HuDy.DoSea3Quest()
     end
     
     if logCount < 50 then
-        print("[Sea 3 Quest] Äang farm Log (hiá»‡n cÃ³: " .. logCount .. "/50)")
-        -- Cháº·t cÃ¢y á»Ÿ Sea 2 Ä‘á»ƒ láº¥y Log
-        local treesFolder = workspace:FindFirstChild("Island") and workspace.Island:FindFirstChild("A - Japan") and workspace.Island["A - Japan"]:FindFirstChild("A - Japan") and workspace.Island["A - Japan"]["A - Japan"]:FindFirstChild("Base") and workspace.Island["A - Japan"]["A - Japan"].Base:FindFirstChild("Trees")
-        
-        local bestTree = nil
-        local bestDist = math.huge
-        local rootPos = root and root.Position or Vector3.zero
-        
-        if treesFolder then
-            for _, tree in ipairs(treesFolder:GetChildren()) do
-                if tree:IsA("Model") then
-                    local targetRoot = tree:FindFirstChild("Wood") or tree.PrimaryPart
-                    -- Kiá»ƒm tra cÃ¢y cÃ²n sá»‘ng (Transparency < 1)
-                    if targetRoot and targetRoot:IsA("BasePart") and targetRoot.Transparency < 1 then
-                        local dist = (targetRoot.Position - rootPos).Magnitude
-                        if dist < bestDist then
-                            bestDist = dist
-                            bestTree = targetRoot
-                        end
-                    end
-                end
-            end
-        end
-        
-        if bestTree then
-            HuDy.TP(bestTree.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0))
-            HuDy.Attack(bestTree) -- Spam skill Ä‘á»ƒ cháº·t cÃ¢y
-            return
-        else
-            -- Táº¡m thá»i TP vá» giá»¯a Ä‘áº£o A - Japan náº¿u khÃ´ng tháº¥y cÃ¢y
+        print("[Sea 3 Quest] Dang farm Log (hien co: " .. logCount .. "/50)")
+        -- Chat cay thong qua he thong ChopTree (chong ket 10s & chong nhay vao nha go)
+        local chopped = HuDy.ChopTree(root)
+        if not chopped then
+            -- Tam thoi TP ve giua dao A - Japan neu khong thay cay
             HuDy.TP(CFrame.new(-6178.5, 57.8, 6895.6))
         end
         return
@@ -1749,61 +2126,27 @@ function HuDy.StartAutoFarm()
                                 if data then data.SkipQuest = true end
                             end
 
-                            -- 3. Xử lý Chặt cây nếu lượt hiện tại chọn Log hoặc không có quái
+                            -- 3. Xử lý Chặt cây nếu lượt hiện tại chọn Log hoặc không có quái (Chống kẹt 10s & chống nhảy vào nhà gỗ)
                             if not data then
                                 local isCurrentLog = currentMat:find("Log")
                                 if isCurrentLog then
-                                    local foundTree = false
-                                    pcall(function()
-                                        local function processTree(item)
-                                            local root = item:IsA("BasePart") and item or item:FindFirstChild("HumanoidRootPart") or item:FindFirstChild("Trunk") or item:FindFirstChildWhichIsA("BasePart")
-                                            if root then
-                                                local hum = item:FindFirstChildOfClass("Humanoid")
-                                                if hum then
-                                                    if hum.Health <= 0 then return false end
-                                                else
-                                                    if root.Transparency >= 1 then return false end
-                                                end
-                                                HuDy.TP(root.CFrame)
-                                                HuDy.Attack(root)
-                                                return true
-                                            end
-                                            return false
-                                        end
-
-                                        local folders = {workspace:FindFirstChild("Trees"), workspace:FindFirstChild("Tree")}
-                                        for _, folder in ipairs(folders) do
-                                            if folder then
-                                                for _, tree in ipairs(folder:GetChildren()) do
-                                                    if processTree(tree) then
-                                                        foundTree = true
-                                                        return
-                                                    end
-                                                end
-                                            end
-                                        end
-
-                                        local islandFolder = workspace:FindFirstChild("Island") or workspace:FindFirstChild("Islands")
-                                        if islandFolder then
-                                            for _, item in ipairs(islandFolder:GetDescendants()) do
-                                                if (item:IsA("Model") or item:IsA("BasePart")) and (string.find(item.Name, "Tree") or string.find(item.Name, "Wood") or item:FindFirstChild("Trunk")) then
-                                                    if item.Name == "Tree pot" then continue end
-                                                    if processTree(item) then
-                                                        foundTree = true
-                                                        return
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end)
+                                    local foundTree = HuDy.ChopTree(hrp)
 
                                     if #selectedMats > 1 and tick() - HuDy.MaterialWaveStartTime > 8 then
                                         HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
                                         HuDy.MaterialWaveStartTime = tick()
+                                        HuDy.CurrentTree = nil
+                                        HuDy.CurrentTreeRoot = nil
+                                        HuDy.CurrentTreeStartTime = 0
                                     end
 
                                     if foundTree then return end
                                 end
+                            else
+                                -- Đang farm quái -> Reset trạng thái chặt cây
+                                HuDy.CurrentTree = nil
+                                HuDy.CurrentTreeRoot = nil
+                                HuDy.CurrentTreeStartTime = 0
                             end
                         end
                     -- Ưu tiên 1.5: Farm Boss từ Auto Hop Boss (Đánh xong tự Hop)
@@ -2104,6 +2447,9 @@ function HuDy.StartAutoFarm()
         HuDy.CurrentCenterMob = nil
         HuDy.CurrentCenterRoot = nil
         HuDy.AggroedMobs = {}
+        HuDy.CurrentTree = nil
+        HuDy.CurrentTreeRoot = nil
+        HuDy.CurrentTreeStartTime = 0
         HuDy.StopTP() -- Tắt thì rơi xuống đất
     end)
 end
@@ -2125,11 +2471,22 @@ function HuDy.GetDungeonElevator()
                 end
             end
         end
+        -- Kiểm tra trực tiếp các đảo Dungeon
+        local direct = islandFolder:FindFirstChild("(Real) Hard Dungeon") or islandFolder:FindFirstChild("(Real) Normal Dungeon") or islandFolder:FindFirstChild("(Real) Easy Dungeon")
+        if direct and direct:FindFirstChild("Elevator") then
+            local el = direct.Elevator
+            return el:FindFirstChild("MeshPart") or el:FindFirstChildWhichIsA("BasePart") or (el:IsA("BasePart") and el)
+        end
     end
-    -- Kiểm tra trực tiếp các đảo Dungeon
-    local direct = islandFolder and (islandFolder:FindFirstChild("(Real) Hard Dungeon") or islandFolder:FindFirstChild("(Real) Normal Dungeon") or islandFolder:FindFirstChild("(Real) Easy Dungeon"))
-    if direct and direct:FindFirstChild("Elevator") then
-        return direct.Elevator:FindFirstChild("MeshPart") or direct.Elevator:FindFirstChildWhichIsA("BasePart")
+    -- Fallback: Kiểm tra trực tiếp các folder khác trong workspace
+    local dFolder = workspace:FindFirstChild("Dungeon")
+    if dFolder and dFolder:FindFirstChild("Elevator") then
+        local el = dFolder.Elevator
+        return el:FindFirstChild("MeshPart") or el:FindFirstChildWhichIsA("BasePart") or (el:IsA("BasePart") and el)
+    end
+    local directEl = workspace:FindFirstChild("Elevator")
+    if directEl then
+        return directEl:FindFirstChild("MeshPart") or directEl:FindFirstChildWhichIsA("BasePart") or (directEl:IsA("BasePart") and directEl)
     end
     return nil
 end
@@ -2195,7 +2552,25 @@ function HuDy.GetAllDungeonMobs()
                     local hum = m:FindFirstChildOfClass("Humanoid")
                     local root = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
                     if hum and root and hum.Health > 0 then
-                        table.insert(mobs, { Model = m, Root = root, Hum = hum })
+                        local mobEntry = { Model = m, Root = root, Hum = hum }
+                        table.insert(mobs, mobEntry)
+                        
+                        -- Tức thì hook DescendantAdded cho Boss Chaos Crab / Craberno để bắt TargetPos1 & NoAttack (0ms latency)
+                        local mName = string.lower(m.Name or "")
+                        if (mName:find("chaos crab") or mName:find("crab") or hum.MaxHealth >= 800000) and not m:GetAttribute("HuDy_CrabHooked") then
+                            m:SetAttribute("HuDy_CrabHooked", true)
+                            m.DescendantAdded:Connect(function(child)
+                                local cName = child.Name or ""
+                                if cName:find("TargetPos") or cName == "NoAttack" then
+                                    local cur = tick()
+                                    if not HuDy.CrabBombActive and not (HuDy.CrabDodgeDebounce and cur < HuDy.CrabDodgeDebounce) then
+                                        HuDy.CrabSkillInstantTrigger = cur
+                                        HuDy.CrabSkillInstantMob = mobEntry
+                                        HuDy.CrabSkillInstantName = (cName:find("TargetPos") and "Chaos Crab: Bom Nổ Thảm (TargetPos1-8)") or "Chaos Crab: Gồng Skill Nổ (NoAttack)"
+                                    end
+                                end
+                            end)
+                        end
                     end
                 end
             end
@@ -2204,58 +2579,313 @@ function HuDy.GetAllDungeonMobs()
     return mobs
 end
 
-function HuDy.IsChaosCrabWarningActive(mobs)
-    local crabMob = nil
-    if mobs then
-        for _, m in ipairs(mobs) do
-            if m.Model and m.Hum and m.Hum.Health > 0 then
-                local mName = string.lower(m.Model.Name or "")
-                if mName:find("chaos crab") or mName:find("craberno") or mName:find("crab") or (m.Hum.MaxHealth >= 800000) then
-                    crabMob = m
-                    break
+function HuDy.ClearBossVisualEffects(model)
+    if not model then return end
+    pcall(function()
+        local h = model:FindFirstChild("HuDy_BossWarningHighlight")
+        if h then h:Destroy() end
+        local g = model:FindFirstChild("HuDy_BossWarningGui", true)
+        if g then g:Destroy() end
+    end)
+end
+
+function HuDy.ApplyBossVisualEffects(model, skillTitle, duration)
+    if not model then return end
+    pcall(function()
+        -- 1. Highlight phát sáng đỏ neon quanh thân Boss
+        local hl = model:FindFirstChild("HuDy_BossWarningHighlight")
+        if not hl then
+            hl = Instance.new("Highlight")
+            hl.Name = "HuDy_BossWarningHighlight"
+            hl.FillColor = Color3.fromRGB(255, 35, 35)
+            hl.OutlineColor = Color3.fromRGB(255, 255, 50)
+            hl.FillTransparency = 0.35
+            hl.OutlineTransparency = 0
+            hl.Adornee = model
+            hl.Parent = model
+        end
+        
+        -- 2. BillboardGui bảng chữ cảnh báo trên đầu Boss với countdown thời gian thực
+        local headOrRoot = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model.PrimaryPart
+        if headOrRoot and not headOrRoot:FindFirstChild("HuDy_BossWarningGui") then
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "HuDy_BossWarningGui"
+            bb.Adornee = headOrRoot
+            bb.Size = UDim2.new(0, 320, 0, 70)
+            bb.StudsOffset = Vector3.new(0, 18, 0)
+            bb.AlwaysOnTop = true
+            
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+            frame.BackgroundTransparency = 0.15
+            frame.BorderSizePixel = 0
+            frame.Parent = bb
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 10)
+            corner.Parent = frame
+            
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(255, 60, 60)
+            stroke.Thickness = 2.5
+            stroke.Parent = frame
+            
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, 0, 0.45, 0)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = "⚠️ BOSS SKILL DETECTED ⚠️"
+            titleLbl.TextColor3 = Color3.fromRGB(255, 65, 65)
+            titleLbl.TextScaled = true
+            titleLbl.Font = Enum.Font.GothamBold
+            titleLbl.Parent = frame
+            
+            local descLbl = Instance.new("TextLabel")
+            descLbl.Name = "DescLabel"
+            descLbl.Size = UDim2.new(1, -10, 0.5, 0)
+            descLbl.Position = UDim2.new(0, 5, 0.45, 0)
+            descLbl.BackgroundTransparency = 1
+            descLbl.Text = tostring(skillTitle or "NÉ SKILL (350 STUDS)")
+            descLbl.TextColor3 = Color3.fromRGB(255, 235, 90)
+            descLbl.TextScaled = true
+            descLbl.Font = Enum.Font.GothamMedium
+            descLbl.Parent = frame
+            
+            bb.Parent = headOrRoot
+        end
+    end)
+end
+
+function HuDy.FindCrabBombInWorkspace(centerPos)
+    if not centerPos then return nil, nil end
+    
+    local bombNames = {
+        ["circ"] = "Chaos Crab: Vòng Bom Nổ (Circ)",
+        ["circ2"] = "Chaos Crab: Vòng Bom Nổ (Circ2)",
+        ["meteor"] = "Chaos Crab: Bom Thiên Thạch (Meteor)",
+        ["crabpull"] = "Chaos Crab: Hút Nộ (CrabPull)",
+    }
+    
+    -- 1. Quét trực tiếp trong workspace
+    for _, child in ipairs(workspace:GetChildren()) do
+        local cName = string.lower(child.Name or "")
+        if bombNames[cName] and not (LocalPlayer.Character and child:IsDescendantOf(LocalPlayer.Character)) then
+            local pos = nil
+            if child:IsA("Model") then
+                pos = child:GetPivot().Position
+            elseif child:IsA("BasePart") then
+                pos = child.Position
+            end
+            if pos and (pos - centerPos).Magnitude <= 350 then
+                return child, bombNames[cName]
+            end
+        end
+    end
+    
+    -- 2. Quét trong các folder hiệu ứng phổ biến nếu có (Effects, Effect, Debris, Visuals)
+    for _, fName in ipairs({"Effects", "Effect", "Debris", "Visuals", "Visual"}) do
+        local f = workspace:FindFirstChild(fName)
+        if f then
+            for _, child in ipairs(f:GetChildren()) do
+                local cName = string.lower(child.Name or "")
+                if bombNames[cName] and not (LocalPlayer.Character and child:IsDescendantOf(LocalPlayer.Character)) then
+                    local pos = nil
+                    if child:IsA("Model") then
+                        pos = child:GetPivot().Position
+                    elseif child:IsA("BasePart") then
+                        pos = child.Position
+                    end
+                    if pos and (pos - centerPos).Magnitude <= 350 then
+                        return child, bombNames[cName]
+                    end
                 end
             end
         end
     end
     
-    if not crabMob or not crabMob.Root or not crabMob.Model then 
-        HuDy.CrabBombActive = false
-        HuDy.CrabBombStartTime = nil
-        return false, nil 
-    end
+    return nil, nil
+end
 
-    -- 1. Kiểm tra trực tiếp xem có bất kỳ vòng nổ bom TargetPos nào đang TỒN TẠI trong model không:
-    local hasActiveTargetPos = false
-    for _, desc in ipairs(crabMob.Model:GetDescendants()) do
-        if desc:IsA("Vector3Value") and string.find(desc.Name, "TargetPos") ~= nil then
-            hasActiveTargetPos = true
-            break
+function HuDy.IsChaosCrabWarningActive(mobs, elevatorCenter)
+    local now = tick()
+    
+    -- 1. Nếu Boss hiện tại đã chết hoặc biến mất -> lập tức hủy né
+    if HuDy.ActiveCrabMob then
+        local m = HuDy.ActiveCrabMob
+        if not m.Model or not m.Model.Parent or not m.Hum or m.Hum.Health <= 0 then
+            HuDy.ClearBossVisualEffects(m.Model)
+            HuDy.CrabBombActive = false
+            HuDy.CrabBombStartTime = nil
+            HuDy.CrabDodgePos = nil
+            HuDy.ActiveCrabMob = nil
+            HuDy.ActiveCrabBombObj = nil
+            HuDy.CrabSkillType = nil
+            return false, nil
         end
     end
 
-    local now = tick()
-    if hasActiveTargetPos then
-        if not HuDy.CrabBombActive then
-            -- Bắt đầu đợt bom mới: Kích hoạt Ken Haki
-            HuDy.CrabBombActive = true
-            HuDy.CrabBombStartTime = now
+    -- 2. Đang trong trạng thái né:
+    if HuDy.CrabBombActive then
+        local elapsed = now - (HuDy.CrabBombStartTime or now)
+        local totalDuration = HuDy.CrabBombDuration or 3.8
+
+        -- Cập nhật thời gian đếm ngược trực tiếp trên BillboardGui của Boss
+        if HuDy.ActiveCrabMob and HuDy.ActiveCrabMob.Model then
             pcall(function()
-                local kenFunc = ReplicatedStorage:FindFirstChild("Chest") and ReplicatedStorage.Chest:FindFirstChild("Remotes") and ReplicatedStorage.Chest.Remotes:FindFirstChild("Functions") and ReplicatedStorage.Chest.Remotes.Functions:FindFirstChild("KenEvent")
-                if kenFunc then kenFunc:InvokeServer() end
+                local gui = HuDy.ActiveCrabMob.Model:FindFirstChild("HuDy_BossWarningGui", true)
+                local desc = gui and gui:FindFirstChild("Frame") and gui.Frame:FindFirstChild("DescLabel")
+                if desc then
+                    desc.Text = string.format("%s (Đang né trên cao: %.1fs)", HuDy.CrabSkillName or "Né Chiêu", math.max(0, totalDuration - elapsed))
+                end
             end)
         end
         
-        -- Giới hạn an toàn tối đa 5.0s (phòng trường hợp game lag không tự xóa TargetPos)
-        if (now - (HuDy.CrabBombStartTime or now)) < 5.0 then
-            return true, crabMob
+        -- Thoát khỏi né khi hết thời gian an toàn (3.8s là đủ để toàn bộ vụ nổ/xoáy chiêu kết thúc)
+        if elapsed < totalDuration then
+            return true, HuDy.ActiveCrabMob
         else
-            -- Quá 5.0s -> bom chắc chắn đã nổ xong -> tắt né
+            -- HẾT THỜI GIAN NÉ: Dọn dẹp hiệu ứng và hạ xuống đánh tiếp ngay lập tức
+            if HuDy.ActiveCrabMob and HuDy.ActiveCrabMob.Model then
+                HuDy.ClearBossVisualEffects(HuDy.ActiveCrabMob.Model)
+            end
+            HuDy.CrabBombActive = false
+            HuDy.CrabBombStartTime = nil
+            HuDy.CrabDodgePos = nil
+            HuDy.ActiveCrabMob = nil
+            HuDy.ActiveCrabBombObj = nil
+            HuDy.CrabSkillType = nil
+            HuDy.CrabSkillInstantTrigger = nil
+            HuDy.CrabSkillInstantMob = nil
+            HuDy.CrabDodgeDebounce = now + 1.5 -- Debounce 1.5s để đánh liên tục, không bị gián đoạn
             return false, nil
         end
-    else
-        -- Ngay khi TargetPos biến mất khỏi game -> HẾT SKILL BOM NGAY LẬP TỨC -> QUAY LẠI TẤN CÔNG LIỀN!
-        HuDy.CrabBombActive = false
-        HuDy.CrabBombStartTime = nil
+    end
+
+    -- 3. Kiểm tra Debounce
+    if HuDy.CrabDodgeDebounce and now < HuDy.CrabDodgeDebounce then
+        return false, nil
+    end
+
+    -- 4. Quét tìm:
+    local targetCrab = nil
+    local detectedSkillName = nil
+    local skillDuration = 3.8
+    local skillType = "Bomb"
+    local foundBombObj = nil
+
+    -- 4.0. Kiểm tra sự kiện tức thì từ DescendantAdded (bắt ngay lập tức 0ms khi vừa xuất hiện TargetPos hoặc NoAttack)
+    if HuDy.CrabSkillInstantTrigger and (now - HuDy.CrabSkillInstantTrigger) < 2.0 and HuDy.CrabSkillInstantMob then
+        local iMob = HuDy.CrabSkillInstantMob
+        if iMob.Model and iMob.Model.Parent and iMob.Hum and iMob.Hum.Health > 0 then
+            targetCrab = iMob
+            detectedSkillName = HuDy.CrabSkillInstantName or "Chaos Crab: Bom Nổ Thảm (TargetPos1-8)"
+            skillDuration = 3.8
+        end
+    end
+
+    if not targetCrab and mobs then
+        for _, m in ipairs(mobs) do
+            if m.Model and m.Hum and m.Hum.Health > 0 then
+                local mName = string.lower(m.Model.Name or "")
+                local isCrab = mName:find("chaos crab") or mName:find("craberno") or mName:find("crab") or (m.Hum.MaxHealth >= 800000)
+                
+                if isCrab then
+                    -- A. KIỂM TRA TRỰC TIẾP TARGETPOS & NOATTACK TRÊN MODEL BOSS
+                    local hasTargetPos = m.Model:FindFirstChild("TargetPos1") or m.Model:FindFirstChild("TargetPos2") or m.Model:FindFirstChild("TargetPos")
+                    local hasNoAttack = m.Model:FindFirstChild("NoAttack")
+                    if hasTargetPos or hasNoAttack then
+                        targetCrab = m
+                        detectedSkillName = (hasTargetPos and "Chaos Crab: Bom Nổ Thảm (TargetPos1-8)") or (mName:find("craberno") and "Craberno: Xoáy Chiêu (NoAttack)") or "Chaos Crab: Gồng Skill Nổ (NoAttack)"
+                        skillDuration = 3.8
+                        break
+                    end
+                    
+                    -- B. KIỂM TRA ANIMATION SKILL (Anim 117494057230416, 117923640199355, 122151547041178)
+                    local animator = m.Hum:FindFirstChildOfClass("Animator")
+                    if animator then
+                        for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                            if track.IsPlaying and track.Speed > 0.05 then
+                                local animObj = track.Animation
+                                local rawId = animObj and tostring(animObj.AnimationId or "") or ""
+                                local numId = rawId:match("%d+") or ""
+                                
+                                if numId == "117494057230416" then
+                                    targetCrab = m
+                                    detectedSkillName = "Chaos Crab: Nhảy Gồng Bom (Anim 117494...)"
+                                    skillDuration = 3.8
+                                    break
+                                elseif numId == "117923640199355" then
+                                    targetCrab = m
+                                    detectedSkillName = "Chaos Crab: Kích Nổ Bom (Anim 117923...)"
+                                    skillDuration = 3.8
+                                    break
+                                elseif numId == "122151547041178" then
+                                    targetCrab = m
+                                    detectedSkillName = "Craberno: Ultimate Xoáy Lửa (Anim 122151...)"
+                                    skillDuration = 3.8
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if targetCrab then break end
+                    
+                    -- C. DỰ PHÒNG: KIỂM TRA OBJECT BOM TRONG WORKSPACE NẾU CÓ
+                    local center = elevatorCenter or (m.Root and m.Root.Position)
+                    local bObj, bName = HuDy.FindCrabBombInWorkspace(center)
+                    if bObj and bName then
+                        targetCrab = m
+                        detectedSkillName = bName
+                        foundBombObj = bObj
+                        skillDuration = 3.8
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    -- 5. Kích hoạt đợt né mới khi phát hiện bom / skill:
+    if targetCrab and detectedSkillName then
+        -- QUAN TRỌNG: Dọn sạch các TargetPos và NoAttack cũ trên Model của Boss ngay lập tức trên Client
+        -- để lần quét tiếp theo sau khi né xong không bị bắt nhầm data cũ gây kẹt vô tận (inf)!
+        pcall(function()
+            if targetCrab.Model then
+                for _, child in ipairs(targetCrab.Model:GetChildren()) do
+                    local cn = child.Name or ""
+                    if cn:find("TargetPos") or cn == "NoAttack" then
+                        child:Destroy()
+                    end
+                end
+            end
+        end)
+
+        HuDy.CrabSkillInstantTrigger = nil
+        HuDy.CrabSkillInstantMob = nil
+        HuDy.CrabBombActive = true
+        HuDy.CrabBombStartTime = now
+        HuDy.CrabBombDuration = skillDuration
+        HuDy.ActiveCrabMob = targetCrab
+        HuDy.ActiveCrabBombObj = foundBombObj
+        HuDy.CrabSkillName = detectedSkillName
+        HuDy.CrabSkillType = skillType
+
+        -- Tính vị trí né DUY NHẤT MỘT LẦN quanh thang máy: Bay cao +300 studs né trọn vùng nổ rộng lớn, bán kính 380 studs (Khóa bằng Heartbeat + Noclip chống giật lùi)
+        local origin = elevatorCenter or (targetCrab.Root and targetCrab.Root.Position) or Vector3.new(0, 0, 0)
+        local angle = math.random() * math.pi * 2
+        local dodgeRadius = 380
+        local offsetX = math.cos(angle) * dodgeRadius
+        local offsetZ = math.sin(angle) * dodgeRadius
+        HuDy.CrabDodgePos = Vector3.new(origin.X + offsetX, origin.Y + 300, origin.Z + offsetZ)
+
+        pcall(function()
+            local kenFunc = ReplicatedStorage:FindFirstChild("Chest") and ReplicatedStorage.Chest:FindFirstChild("Remotes") and ReplicatedStorage.Chest.Remotes:FindFirstChild("Functions") and ReplicatedStorage.Chest.Remotes.Functions:FindFirstChild("KenEvent")
+            if kenFunc then kenFunc:InvokeServer() end
+        end)
+
+        -- Áp dụng hiệu ứng Highlight đỏ neon + BillboardGui trên đầu Boss
+        HuDy.ApplyBossVisualEffects(targetCrab.Model, detectedSkillName, skillDuration)
+        return true, targetCrab
     end
 
     return false, nil
@@ -2275,8 +2905,8 @@ local IGNORED_BASIC_ANIMS = {
     ["15308494079"] = true, -- Basic punch 3
     ["15309128810"] = true, -- Basic punch 4
     ["6071468500"] = true, -- Basic slash
-    ["79751887011440"] = true, -- Crab basic hit
-    ["114127920662329"] = true, -- Crab basic swipe
+    ["79751887011440"] = true, -- Crab basic hit 1
+    ["114127920662329"] = true, -- Crab basic swipe 2
 }
 
 function HuDy.IsDungeonBossAttacking(mobs)
@@ -2453,6 +3083,16 @@ end
 function HuDy.StartAutoDungeon()
     if HuDy.DungeonLoopRunning then return end
     HuDy.DungeonLoopRunning = true
+    HuDy.CrabBombActive = false
+    HuDy.CrabDodgePos = nil
+    HuDy.ActiveCrabMob = nil
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj.Name == "HuDy_BossWarningHighlight" or obj.Name == "HuDy_BossWarningGui" then
+                obj:Destroy()
+            end
+        end
+    end)
     
     task.spawn(function()
         while HuDy.Flags.AutoDungeon do
@@ -2539,7 +3179,7 @@ function HuDy.StartAutoDungeon()
                 if not isRealDungeonIsland and #allMobs == 0 and not isChooseVisible then
                     local gateCFrame = HuDy.GetDungeonGateEntrance()
                     if gateCFrame then
-                        HuDy.TP(gateCFrame * CFrame.new(0, 3, 0), gateCFrame.Position)
+                        HuDy.TP(gateCFrame * CFrame.new(0, 3, 0), nil, true)
                         
                         -- Tự động kích hoạt ProximityPrompt của cổng nếu có
                         pcall(function()
@@ -2593,16 +3233,11 @@ function HuDy.StartAutoDungeon()
                     local targetMob = target and target.Model
                     
                     if targetRoot then
-                        -- 1. Kiểm tra Warning Bomb của Chaos Crab (Chỉ né khi có TargetPos)
+                        -- 1. Kiểm tra Warning Bomb của Chaos Crab & Xoáy Lửa Craberno (Có Latch Timer 3.5s + Hiệu ứng thị giác)
                         local isCrabWarning, crabMob = false, nil
                         if HuDy.Flags.DungeonAutoDodge ~= false then
-                            isCrabWarning, crabMob = HuDy.IsChaosCrabWarningActive(validMobs)
-                            if isCrabWarning then
-                                pcall(function()
-                                    local kenFunc = ReplicatedStorage:FindFirstChild("Chest") and ReplicatedStorage.Chest:FindFirstChild("Remotes") and ReplicatedStorage.Chest.Remotes:FindFirstChild("Functions") and ReplicatedStorage.Chest.Remotes.Functions:FindFirstChild("KenEvent")
-                                    if kenFunc then kenFunc:InvokeServer() end
-                                end)
-                            end
+                            local elCenter = (elevator and elevator.Position) or centerPos
+                            isCrabWarning, crabMob = HuDy.IsChaosCrabWarningActive(validMobs, elCenter)
                         end
                         
                         -- 2. Kiểm tra Boss Warden hoặc Quái thường tung chiêu
@@ -2625,26 +3260,29 @@ function HuDy.StartAutoDungeon()
                         local shouldAttack = true
                         
                         if isCrabWarning and crabMob and crabMob.Root then
-                            -- A. RIÊNG SKILL NỔ BOMB TARGETPOS CỦA CHAOS CRAB [LV. 10000] & CRABERNO [LV. 15000]:
-                            -- Teleport thẳng lên cao +120 studs ngay trên vị trí Chaos Crab
-                            -- (Thoát hoàn toàn khỏi 8 vòng tròn nổ bom TargetPos dưới sàn đấu)
-                            local crabPos = crabMob.Root.Position
-                            local safePos = Vector3.new(crabPos.X, crabPos.Y + 120, crabPos.Z)
+                            -- A. RIÊNG SKILL NỔ BOMB CỦA CHAOS CRAB [LV. 10000] & XOÁY LỬA CỦA CRABERNO [LV. 15000]:
+                            -- Né xa hoàn toàn khỏi bán kính nổ cực lớn (+300 studs độ cao, 380 studs bán kính)
+                            local origin = (elevator and elevator.Position) or centerPos
+                            local dodgePos = HuDy.CrabDodgePos or Vector3.new(origin.X, origin.Y + 300, origin.Z + 380)
+                            local lookHoriz = Vector3.new(origin.X, dodgePos.Y, origin.Z) -- Giữ mặt hướng ngang, nhân vật luôn đứng thẳng
                             
-                            targetCFrame = CFrame.new(safePos, crabPos)
-                            lookPos = crabPos
-                            shouldAttack = false -- Tạm dừng đánh trong 3.5s né bomb nổ để không bị kéo xuống đất
+                            targetCFrame = CFrame.new(dodgePos, lookHoriz)
+                            lookPos = lookHoriz
+                            shouldAttack = false -- Tạm dừng đánh trong lúc né chiêu để không bị kéo xuống đất
                         elseif isOtherDodge and otherMob and otherMob.Root then
-                            local bPos = otherMob.Root.Position
-                            lookPos = bPos
+                            if not HuDy.CrabBombActive then HuDy.CrabDodgePos = nil end
+                            local origin = (elevator and elevator.Position) or centerPos
+                            lookPos = origin
                             if isBossMob then
                                 -- B. CÁC BOSS WARDEN (Dark Warden, Flame Warden, Gravity Warden, Ice Warden):
-                                -- TP RA XA 350 STUDS VÀ BAY XOAY VÒNG TRÒN
-                                local angle = (tick() * 3.5) % (2 * math.pi)
-                                local dodgeRadius = 350
-                                local dodgeHeight = 25
-                                local dodgePos = bPos + Vector3.new(math.cos(angle) * dodgeRadius, dodgeHeight, math.sin(angle) * dodgeRadius)
-                                targetCFrame = CFrame.new(dodgePos, bPos)
+                                -- Bay cao +120 studs trên không, bán kính 250 studs né trọn chiêu thức diện rộng
+                                local angle = (tick() * 2.0) % (2 * math.pi)
+                                local dodgeRadius = 250
+                                local dodgeHeight = 120
+                                local dodgePos = origin + Vector3.new(math.cos(angle) * dodgeRadius, dodgeHeight, math.sin(angle) * dodgeRadius)
+                                local lookHoriz = Vector3.new(origin.X, dodgePos.Y, origin.Z)
+                                targetCFrame = CFrame.new(dodgePos, lookHoriz)
+                                lookPos = lookHoriz
                             else
                                 -- C. QUÁI THƯỜNG (Warden's Bane, Pirate Gunner, Imprisoned Pirate, v.v.): BAY CAO LÊN +90 STUDS NÉ CHIÊU
                                 local distance = (tonumber(HuDy.Flags.FarmDistance) or 8) + 30
@@ -2652,6 +3290,7 @@ function HuDy.StartAutoDungeon()
                                 targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
                             end
                         else
+                            if not HuDy.CrabBombActive then HuDy.CrabDodgePos = nil end
                             -- D. VỊ TRÍ ĐÁNH BÌNH THƯỜNG (Quái thường + Boss khi không tung chiêu):
                             local farmMode = HuDy.Flags.FarmMode or "Above"
                             local distance = tonumber(HuDy.Flags.FarmDistance) or 8
@@ -2701,15 +3340,33 @@ function HuDy.StartAutoDungeon()
                         end
                     end
                 else
-                    -- Không có quái -> Đã dọn xong tầng -> Bay lên trụ kéo thang máy cách 20 studs để thang kéo lên tầng tiếp theo
+                    if HuDy.ActiveCrabMob and HuDy.ActiveCrabMob.Model then
+                        HuDy.ClearBossVisualEffects(HuDy.ActiveCrabMob.Model)
+                    end
+                    HuDy.CrabBombActive = false
+                    HuDy.CrabBombStartTime = nil
+                    HuDy.CrabDodgePos = nil
+                    HuDy.ActiveCrabMob = nil
+                    -- Không có quái -> Đang đếm ngược chuyển tầng (10s) hoặc chờ quái spawn
                     if elevator then
-                        HuDy.TP(elevator.CFrame * CFrame.new(0, 20, 0), elevator.Position)
+                        -- Đứng thẳng tự nhiên bình thường trên sàn thang máy (cách mặt sàn 3.5 studs, không bị nghiêng/khóa nằm ngang)
+                        local standPos = elevator.Position + Vector3.new(0, 3.5, 0)
+                        local _, yRot, _ = elevator.CFrame:ToEulerAnglesYXZ()
+                        local standCFrame = CFrame.new(standPos) * CFrame.Angles(0, yRot, 0)
+                        HuDy.TP(standCFrame, nil, true)
                     else
                         HuDy.StopTP()
                     end
                 end
             end)
         end
+        if HuDy.ActiveCrabMob and HuDy.ActiveCrabMob.Model then
+            HuDy.ClearBossVisualEffects(HuDy.ActiveCrabMob.Model)
+        end
+        HuDy.CrabBombActive = false
+        HuDy.CrabBombStartTime = nil
+        HuDy.CrabDodgePos = nil
+        HuDy.ActiveCrabMob = nil
         HuDy.DungeonLoopRunning = false
         HuDy.StopTP()
     end)
@@ -3490,6 +4147,15 @@ MainTab:Toggle({
     Value = (HuDy.Flags.BringMobs ~= nil) and HuDy.Flags.BringMobs or true,
     Callback = function(state)
         HuDy.Flags.BringMobs = state
+        HuDy.SaveConfig()
+    end,
+})
+MainTab:Toggle({
+    Title = "Auto Ope V2 Room (Mở Room thông minh)",
+    Flag = "AutoOpeRoom",
+    Value = (HuDy.Flags.AutoOpeRoom ~= nil) and HuDy.Flags.AutoOpeRoom or true,
+    Callback = function(state)
+        HuDy.Flags.AutoOpeRoom = state
         HuDy.SaveConfig()
     end,
 })
