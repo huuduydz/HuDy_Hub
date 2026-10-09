@@ -2,22 +2,21 @@
 -- Architecture: Modular, Async, Performance-Optimized
 -- ==============================================================================
 -- =========================================================================
--- AUTO-EXECUTE SAFE INITIALIZATION & GAME LOAD 
+-- AUTO-EXECUTE SAFE FAST INITIALIZATION & GAME LOAD 
 -- =========================================================================
-while not pcall(function() return game:GetService("RunService") end) do
-    task.wait(0.1) 
-end
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+
 if not game:IsLoaded() then
-    repeat
-        RunService.Heartbeat:Wait()
-    until game:IsLoaded()
+    pcall(function() game.Loaded:Wait() end)
 end
+
 local LocalPlayer = Players.LocalPlayer
-while not LocalPlayer do
-    RunService.Heartbeat:Wait()
-    LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    repeat
+        task.wait(0.05)
+        LocalPlayer = Players.LocalPlayer
+    until LocalPlayer
 end
 local LP = LocalPlayer
 local lplr = LocalPlayer
@@ -42,8 +41,30 @@ local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 
--- Đảm bảo nhân vật đã spawn hoàn tất
-repeat task.wait(0.1) until LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+-- ⚡ FAST AUTO CLICK PLAY / ENTER GAME (Chạy nền song song, không block script load)
+task.spawn(function()
+    pcall(function()
+        local etcFunc = ReplicatedStorage:WaitForChild("Chest", 3)
+            and ReplicatedStorage.Chest:WaitForChild("Remotes", 3)
+            and ReplicatedStorage.Chest.Remotes:WaitForChild("Functions", 3)
+            and ReplicatedStorage.Chest.Remotes.Functions:WaitForChild("EtcFunction", 3)
+        if etcFunc then
+            etcFunc:InvokeServer("EnterTheGame", {})
+        end
+    end)
+    pcall(function()
+        local pgui = LocalPlayer:WaitForChild("PlayerGui", 3)
+        if not pgui then return end
+        local loadingGui = pgui:FindFirstChild("LoadingGUI") or pgui:FindFirstChild("Loading")
+        if loadingGui then
+            local targetBtn = loadingGui:FindFirstChild("Play", true) or loadingGui:FindFirstChild("PlayButton", true)
+            if targetBtn and typeof(firesignal) == "function" then
+                firesignal(targetBtn.MouseButton1Click)
+                firesignal(targetBtn.Activated)
+            end
+        end
+    end)
+end)
 
 -- ==============================================================================
 -- AIMBOT HOOK (Báº» khÃ³a chuá»™t Ä‘á»ƒ luÃ´n target vÃ o Mob)
@@ -85,8 +106,13 @@ local HuDy = {
         AutoFarm = false,
         SelectedWeapons = {"Melee"},
         SelectedWeaponsString = "Melee",
+        SelectedWeaponsList = {"Melee"},
         SelectedMob = "",
         AutoFarmSelectedMob = false,
+        SelectedBoss = "None",
+        AutoFarmBoss = false,
+        SelectMaterialFarm = {},
+        AutoFarmMaterial = false,
         FarmMode = "Above",
         FarmDistance = 8,
         FarmMethod = "Normal",
@@ -107,8 +133,6 @@ local HuDy = {
         AutoNextSea2 = false,
         AutoNextSea3 = false,
         AutoSaveSettings = false,
-        AutoFarmBoss = false,
-        SelectedBoss = "None",
         WalkOnWater = false,
         EnableWalkSpeed = false,
         WalkSpeed = 30,
@@ -121,25 +145,54 @@ local HuDy = {
         AutoHopChaosKraken = false,
         AutoHopDrakenfyr = false,
         AutoHopDeepseaCrusher = false,
+        AutoHopSetSailSelect = false,
+        AutoHopAllSetSail = false,
+        SelectedSetSailBosses = {},
         AutoFreePose = false,
-        SelectedWeaponsList = {"Melee"},
         SelectedSkillsList = {"Z", "X", "C", "V", "B", "E"},
-        SelectedSkills = {Z=true, X=true, C=true, V=true, B=true, E=true}
+        SelectedSkills = {Z=true, X=true, C=true, V=true, B=true, E=true},
+        SelectedKeyType = "Copper Key",
+        SelectedKeyMode = "Open10",
+        AutoOpenKey = false,
+        DungeonDifficulty = "Easy",
+        AutoDungeon = false,
+        DungeonAutoDodge = true,
+        DungeonCenterGather = true,
+        DungeonAutoReset = false,
+        DungeonRaceHealth = 50,
+        DungeonTool = "Melee",
+        DungeonCustomize = false,
+        LogBossEffects = false,
+        EspPlayer = false,
+        EspFruit = false,
+        BringFruit = false,
+        AutoFish = false,
+        SavedFishingCFrame = nil,
+        LiveTarget = "hd",
+        SelectedLiveServer = "",
+        AutoKioruV2 = false,
     },
     Connections = {},
     Tween = nil,
-    SaveFileName = "HuDy Hub/KingLegacy_Config.json"
+    SaveFileName = "HuDy Hub/KingLegacy_Config.json",
+    AutoLoadEnabled = false,
+    AutoLoadTarget = nil,
 }
 
 pcall(function() if not isfolder("HuDy Hub") then makefolder("HuDy Hub") end end)
 
--- ConfigModule: LÆ°u vÃ  Táº£i thiáº¿t láº­p (JSON Format)
+-- ConfigModule: Lưu và Tải thiết lập (JSON Format)
 function HuDy.SaveConfig()
     if writefile then
-        local success, err = pcall(function()
+        pcall(function()
+            if not isfolder("HuDy Hub") then makefolder("HuDy Hub") end
             writefile(HuDy.SaveFileName, HttpService:JSONEncode(HuDy.Flags))
         end)
-        if not success then warn("HuDy Hub | Failed to save config: " .. tostring(err)) end
+        pcall(function()
+            if HuDy.AutoLoadEnabled and HuDy.AutoLoadTarget and HuDy.AutoLoadTarget ~= "" and HuDy.SaveNamedConfig and Window then
+                HuDy.SaveNamedConfig(HuDy.AutoLoadTarget, true)
+            end
+        end)
     end
 end
 
@@ -150,9 +203,12 @@ function HuDy.LoadConfig()
         end)
         if success and type(data) == "table" then
             for k, v in pairs(data) do
-                if HuDy.Flags[k] ~= nil then
-                    HuDy.Flags[k] = v
-                end
+                HuDy.Flags[k] = v
+            end
+            if HuDy.UpdateSelectedMaterials then
+                HuDy.UpdateSelectedMaterials()
+                HuDy.CurrentMaterialTargetMob = nil
+                HuDy.CurrentMaterialTargetRoot = nil
             end
         end
     end
@@ -160,6 +216,95 @@ end
 
 -- Goi ham nay ngay tu dau de tat ca UI khi khoi tao deu doc duoc du lieu da luu
 HuDy.LoadConfig()
+
+-- ==============================================================================
+-- 1.1 ZERO-ALLOCATION MATERIAL CACHING & STATIC MOB LOOKUP SYSTEM
+-- ==============================================================================
+HuDy.CachedSelectedMats = {}
+HuDy.CachedHasPearl = false
+HuDy.CurrentMaterialTargetMob = nil
+HuDy.CurrentMaterialTargetRoot = nil
+
+function HuDy.UpdateSelectedMaterials(raw)
+    local list = {}
+    local input = raw or HuDy.Flags.SelectMaterialFarm
+    if type(input) == "table" then
+        for k, v in pairs(input) do
+            if type(k) == "number" and type(v) == "string" and v ~= "None" and v ~= "" then
+                table.insert(list, v)
+            elseif type(k) == "string" and v == true and k ~= "None" and k ~= "" then
+                table.insert(list, k)
+            elseif type(v) == "string" and v ~= "None" and v ~= "" then
+                table.insert(list, v)
+            end
+        end
+    elseif type(input) == "string" and input ~= "None" and input ~= "" then
+        table.insert(list, input)
+    end
+    HuDy.CachedSelectedMats = list
+    local hasPearl = false
+    for _, m in ipairs(list) do
+        if string.find(m, "Pearl") then
+            hasPearl = true
+            break
+        end
+    end
+    HuDy.CachedHasPearl = hasPearl
+    return list
+end
+
+-- Bảng băm tĩnh O(1) ánh xạ Nguyên liệu -> Danh sách quái mục tiêu theo từng Sea
+HuDy.MaterialToMobMap = {
+    ["Coral"] = function() return {"Fugitive [Lv. 4050]"} end,
+    ["Shark's Fin"] = function() return {"Fishman Guardian [Lv. 4150]"} end,
+    ["Leather"] = function(s1, s2, s3) return s1 and {"Commander [Lv. 100]"} or {"Wilderness Gorilla [Lv. 4325]"} end,
+    ["Shark's Canine"] = function(s1, s2, s3) return s1 and {"Seasoned Fishman [Lv. 2200]"} or {"Ripcurrent Raider [Lv. 4400]"} end,
+    ["Rusted Scrap"] = function(s1, s2, s3) return s1 and {"Clown Swordman [Lv. 50]"} or {"Beast Swordman [Lv. 2300]"} end,
+    ["Fresh Fish"] = function() return {"Fighter Fishman [Lv. 180]"} end,
+    ["thief"] = function(s1, s2, s3) return s2 and {"Desert Thief [Lv. 3125]"} or {"Sand Bandit [Lv. 575]", "Desert Marauder [Lv. 675]"} end,
+    ["Thief's Rag"] = function(s1, s2, s3) return s2 and {"Desert Thief [Lv. 3125]"} or {"Sand Bandit [Lv. 575]", "Desert Marauder [Lv. 675]"} end,
+    ["Angellic's Feather"] = function() return {"Sky Soldier [Lv. 800]", "Cloud Warrior [Lv. 900]"} end,
+    ["Gunpowder"] = function() return {"Naval personnel [Lv. 1200]", "Nautical soldier [Lv. 1350]", "Naval soldier [Lv. 1400]"} end,
+    ["Undead's Ooze"] = function() return {"Zombie [Lv. 1500]"} end,
+    ["Twilight's Orb"] = function() return {"Shadow Master [Lv. 1650]"} end,
+    ["Sea Artifact"] = function() return {"Depths Voyager [Lv. 5300]"} end,
+    ["Iron"] = function() return {"Dead Troupe [Lv. 3800]"} end,
+    ["Carrot"] = function() return {"Beast Swordman [Lv. 2300]"} end,
+    ["Samurai Bandage"] = function() return {"Violet Samurai [Lv. 2500]"} end,
+    ["Bread Crumbs"] = function() return {"Chess Soldier [Lv. 3200]"} end,
+    ["Ice Crystal"] = function() return {"Azlan [Lv. 3300]"} end,
+    ["Magma Crystal"] = function() return {"The Volcano [Lv. 3325]"} end,
+    ["Lost Ruby"] = function() return {"Pharaoh [Lv. 3175]"} end,
+    ["Pile of Bones"] = function() return {"Skull Pirate [Lv. 3050]"} end,
+    ["Dragon's Orb"] = function() return {"Elite Skeleton [Lv. 3075]"} end,
+    ["Dragon' Orb"] = function() return {"Elite Skeleton [Lv. 3075]"} end,
+    ["Lucidus's Totem"] = function() return {"Vice Admiral [Lv. 3500]"} end,
+    ["Dark Beard's Totem"] = function() return {"Dark Beard Servant [Lv. 3400]"} end,
+    ["Essence of Fire"] = function(s1, s2, s3) return s2 and {"Flame User [Lv. 3200]"} or {"Allosaurus [Lv. 5350]"} end,
+    ["Pearl"] = function(s1, s2, s3) return s3 and {"Fugitive [Lv. 4050]"} or {} end,
+}
+
+function HuDy.GetMobsForMaterial(matName)
+    if not matName or matName == "" then return {} end
+    local isSea1 = (game.PlaceId == 4520749081 or game.PlaceId == 14619717013)
+    local isSea2 = (game.PlaceId == 6381829480 or game.PlaceId == 6500329016)
+    local isSea3 = (game.PlaceId == 15759515082)
+
+    local directGetter = HuDy.MaterialToMobMap[matName]
+    if directGetter then
+        return directGetter(isSea1, isSea2, isSea3)
+    end
+    
+    local lowerMat = string.lower(matName)
+    for pattern, getter in pairs(HuDy.MaterialToMobMap) do
+        if string.find(matName, pattern, 1, true) or string.find(lowerMat, string.lower(pattern), 1, true) then
+            return getter(isSea1, isSea2, isSea3)
+        end
+    end
+    return {}
+end
+
+HuDy.UpdateSelectedMaterials()
 
 -- Quáº£n lÃ½ Event Connections sáº¡ch sáº½
 function HuDy.AddConnection(name, connection)
@@ -935,7 +1080,7 @@ end
 
 function HuDy.FindMob(baseSearchName)
     baseSearchName = string.lower(string.match(baseSearchName, "^(.-)%s*%[") or baseSearchName):match("^%s*(.-)%s*$")
-    -- King Legacy lÆ°u quÃ¡i á»Ÿ workspace.Monster.Mon vÃ  workspace.Monster.Boss
+    -- King Legacy lưu quái ở workspace.Monster.Mon và workspace.Monster.Boss
     local foldersToSearch = {}
     local function addFolder(f) if f then table.insert(foldersToSearch, f) end end
     
@@ -952,16 +1097,29 @@ function HuDy.FindMob(baseSearchName)
     addFolder(workspace:FindFirstChild("Alive"))
     addFolder(workspace:FindFirstChild("Enemies"))
 
+    local function checkModel(m)
+        if m and m:IsA("Model") then
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local mBase = string.lower(string.match(string.match(m.Name, "^(.-)%s*%[") or m.Name, "^%s*(.-)%s*$"))
+                if mBase == baseSearchName then
+                    local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Head") or m:FindFirstChildWhichIsA("BasePart", true)
+                    if r then return m, r end
+                end
+            end
+        end
+        return nil, nil
+    end
+
     for _, f in ipairs(foldersToSearch) do
         if f then 
-            for _, m in ipairs(f:GetDescendants()) do
-                if m:IsA("Model") and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                    local mBase = string.lower(string.match(string.match(m.Name, "^(.-)%s*%[") or m.Name, "^%s*(.-)%s*$"))
-                    if mBase == baseSearchName then 
-                        local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Head") or m:FindFirstChildWhichIsA("BasePart", true)
-                        if r then 
-                            return m, r 
-                        end 
+            for _, m in ipairs(f:GetChildren()) do
+                local foundM, foundR = checkModel(m)
+                if foundM then return foundM, foundR end
+                if m:IsA("Folder") or (m:IsA("Model") and not m:FindFirstChildOfClass("Humanoid")) then
+                    for _, subM in ipairs(m:GetChildren()) do
+                        local sM, sR = checkModel(subM)
+                        if sM then return sM, sR end
                     end
                 end
             end 
@@ -970,7 +1128,7 @@ function HuDy.FindMob(baseSearchName)
     return nil, nil
 end
 
--- Quét tìm toàn bộ quái còn sống thuộc bãi trong phạm vi chỉ định (Hỗ trợ Gom quái)
+-- Quét tìm toàn bộ quái còn sống thuộc bãi trong phạm vi chỉ định (Hỗ trợ Gom quái - Shallow Scan siêu mượt)
 function HuDy.GetSpotMobs(mobName, spotPos, maxRadius)
     maxRadius = maxRadius or 350
     local cleanTarget = string.lower(string.match(mobName, "^(.-)%s*%[") or mobName):match("^%s*(.-)%s*$")
@@ -992,23 +1150,32 @@ function HuDy.GetSpotMobs(mobName, spotPos, maxRadius)
     local found = {}
     local seen = {}
     
+    local function evaluateModel(m)
+        if m and m:IsA("Model") and not seen[m] then
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                local mBase = string.lower(string.match(string.match(m.Name, "^(.-)%s*%[") or m.Name, "^%s*(.-)%s*$"))
+                if mBase == cleanTarget then
+                    local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Head") or m:FindFirstChildWhichIsA("BasePart", true)
+                    if r then
+                        local dist = spotV3 and (r.Position - spotV3).Magnitude or 0
+                        if not spotV3 or dist <= maxRadius then
+                            seen[m] = true
+                            table.insert(found, { Model = m, Root = r, Hum = hum, Dist = dist })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     for _, f in ipairs(foldersToSearch) do
         if f then
-            for _, m in ipairs(f:GetDescendants()) do
-                if m:IsA("Model") and not seen[m] then
-                    local hum = m:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local mBase = string.lower(string.match(string.match(m.Name, "^(.-)%s*%[") or m.Name, "^%s*(.-)%s*$"))
-                        if mBase == cleanTarget then
-                            local r = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso") or m:FindFirstChild("Head") or m:FindFirstChildWhichIsA("BasePart", true)
-                            if r then
-                                local dist = spotV3 and (r.Position - spotV3).Magnitude or 0
-                                if not spotV3 or dist <= maxRadius then
-                                    seen[m] = true
-                                    table.insert(found, { Model = m, Root = r, Hum = hum, Dist = dist })
-                                end
-                            end
-                        end
+            for _, m in ipairs(f:GetChildren()) do
+                evaluateModel(m)
+                if m:IsA("Folder") or (m:IsA("Model") and not m:FindFirstChildOfClass("Humanoid")) then
+                    for _, subM in ipairs(m:GetChildren()) do
+                        evaluateModel(subM)
                     end
                 end
             end
@@ -1972,78 +2139,64 @@ function HuDy.StartAutoFarm()
                 
                 if not data then
                     -- Ưu tiên 1: Farm Material (Nhặt ngọc, đánh cây, farm quái nguyên liệu - Multi Selection Support)
-                    if HuDy.Flags.AutoFarmMaterial and HuDy.Flags.SelectMaterialFarm then
-                        local selectedMats = {}
-                        if type(HuDy.Flags.SelectMaterialFarm) == "table" then
-                            for k, v in pairs(HuDy.Flags.SelectMaterialFarm) do
-                                if type(k) == "number" and type(v) == "string" and v ~= "None" and v ~= "" then
-                                    table.insert(selectedMats, v)
-                                elseif type(k) == "string" and v == true and k ~= "None" and k ~= "" then
-                                    table.insert(selectedMats, k)
-                                elseif type(v) == "string" and v ~= "None" and v ~= "" then
-                                    table.insert(selectedMats, v)
-                                end
-                            end
-                        elseif type(HuDy.Flags.SelectMaterialFarm) == "string" and HuDy.Flags.SelectMaterialFarm ~= "None" and HuDy.Flags.SelectMaterialFarm ~= "" then
-                            table.insert(selectedMats, HuDy.Flags.SelectMaterialFarm)
+                    if HuDy.Flags.AutoFarmMaterial and (HuDy.CachedSelectedMats and #HuDy.CachedSelectedMats > 0 or HuDy.Flags.SelectMaterialFarm) then
+                        if not HuDy.CachedSelectedMats or #HuDy.CachedSelectedMats == 0 then
+                            HuDy.UpdateSelectedMaterials()
                         end
+                        local selectedMats = HuDy.CachedSelectedMats
 
-                        if #selectedMats > 0 then
-                            local isSea1 = (game.PlaceId == 4520749081 or game.PlaceId == 14619717013)
-                            local isSea2 = (game.PlaceId == 6381829480 or game.PlaceId == 6500329016)
-                            local isSea3 = (game.PlaceId == 15759515082)
-
-                            -- 1. Ưu tiên nhặt Pearl từ xa nếu có chọn Pearl và có sò mở
-                            local hasPearl = false
-                            for _, m in ipairs(selectedMats) do
-                                if type(m) == "string" and m:find("Pearl") then hasPearl = true break end
-                            end
-
-                            if hasPearl then
-                                local collected = false
-                                pcall(function()
-                                    local clamFolder = workspace:FindFirstChild("ClamFolder")
-                                    if clamFolder then
-                                        for _, clamGrp in ipairs(clamFolder:GetChildren()) do
-                                            local clam = clamGrp:FindFirstChild("Clam")
-                                            if clam then
-                                                local pearl = clam:FindFirstChild("pearl") or clam:FindFirstChild("Pearl")
-                                                if pearl then
-                                                    local char = LocalPlayer.Character
-                                                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                                                    if hrp then
-                                                        local oldCFrame = hrp.CFrame
-                                                        hrp.CFrame = pearl.CFrame
-                                                        task.wait(0.3)
-                                                        
-                                                        local prompt = clam:FindFirstChild("Prompt", true) or clam:FindFirstChildOfClass("ProximityPrompt", true)
-                                                        if prompt and fireproximityprompt then 
-                                                            prompt.RequiresLineOfSight = false
-                                                            prompt.HoldDuration = 0
-                                                            fireproximityprompt(prompt, 1)
-                                                            task.wait(0.1)
-                                                            fireproximityprompt(prompt, 0)
+                        if selectedMats and #selectedMats > 0 then
+                            -- 1. Ưu tiên nhặt Pearl từ xa nếu có chọn Pearl và có sò mở (Throttled 1.0s để không spam Workspace)
+                            if HuDy.CachedHasPearl then
+                                local nowClock = tick()
+                                HuDy.LastClamCheck = HuDy.LastClamCheck or 0
+                                if (nowClock - HuDy.LastClamCheck) >= 1.0 then
+                                    HuDy.LastClamCheck = nowClock
+                                    local collected = false
+                                    pcall(function()
+                                        local clamFolder = workspace:FindFirstChild("ClamFolder")
+                                        if clamFolder then
+                                            for _, clamGrp in ipairs(clamFolder:GetChildren()) do
+                                                local clam = clamGrp:FindFirstChild("Clam")
+                                                if clam then
+                                                    local pearl = clam:FindFirstChild("pearl") or clam:FindFirstChild("Pearl")
+                                                    if pearl then
+                                                        local char = LocalPlayer.Character
+                                                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                                                        if hrp then
+                                                            local oldCFrame = hrp.CFrame
+                                                            hrp.CFrame = pearl.CFrame
+                                                            task.wait(0.3)
+                                                            
+                                                            local prompt = clam:FindFirstChild("Prompt", true) or clam:FindFirstChildOfClass("ProximityPrompt", true)
+                                                            if prompt and fireproximityprompt then 
+                                                                prompt.RequiresLineOfSight = false
+                                                                prompt.HoldDuration = 0
+                                                                fireproximityprompt(prompt, 1)
+                                                                task.wait(0.1)
+                                                                fireproximityprompt(prompt, 0)
+                                                            end
+                                                            
+                                                            if firetouchinterest then
+                                                                firetouchinterest(hrp, pearl, 0)
+                                                                firetouchinterest(hrp, pearl, 1)
+                                                            end
+                                                            
+                                                            task.wait(0.2)
+                                                            hrp.CFrame = oldCFrame
                                                         end
-                                                        
-                                                        if firetouchinterest then
-                                                            firetouchinterest(hrp, pearl, 0)
-                                                            firetouchinterest(hrp, pearl, 1)
-                                                        end
-                                                        
-                                                        task.wait(0.2)
-                                                        hrp.CFrame = oldCFrame
+                                                        collected = true
+                                                        break
                                                     end
-                                                    collected = true
-                                                    break
                                                 end
                                             end
                                         end
-                                    end
-                                end)
-                                if collected then return end
+                                    end)
+                                    if collected then return end
+                                end
                             end
 
-                            -- 2. Smart Round-Robin Xoay Tua Tuần Tự (Mat 1 -> Mat 2 -> Mat 3 -> Mat 1... Đánh xong 1 đợt quái tự nhảy tiếp)
+                            -- 2. Smart Round-Robin & Target Locking Architecture
                             HuDy.MaterialRoundRobinIndex = HuDy.MaterialRoundRobinIndex or 1
                             HuDy.MaterialWaveStarted = HuDy.MaterialWaveStarted or false
                             HuDy.MaterialWaveStartTime = HuDy.MaterialWaveStartTime or 0
@@ -2054,85 +2207,97 @@ function HuDy.StartAutoFarm()
 
                             local currentMat = selectedMats[HuDy.MaterialRoundRobinIndex] or selectedMats[1]
 
-                            local currentTargetMobNames = {}
-                            if currentMat:find("Coral") then currentTargetMobNames = {"Fugitive [Lv. 4050]"}
-                            elseif currentMat:find("Shark's Fin") then currentTargetMobNames = {"Fishman Guardian [Lv. 4150]"}
-                            elseif currentMat:find("Leather") then 
-                                currentTargetMobNames = isSea1 and {"Commander [Lv. 100]"} or {"Wilderness Gorilla [Lv. 4325]"}
-                            elseif currentMat:find("Shark's Canine") then 
-                                currentTargetMobNames = isSea1 and {"Seasoned Fishman [Lv. 2200]"} or {"Ripcurrent Raider [Lv. 4400]"}
-                            elseif currentMat:find("Rusted Scrap") then 
-                                currentTargetMobNames = isSea1 and {"Clown Swordman [Lv. 50]"} or {"Beast Swordman [Lv. 2300]"}
-                            elseif currentMat:find("Fresh Fish") then currentTargetMobNames = {"Fighter Fishman [Lv. 180]"}
-                            elseif currentMat:lower():find("thief") then 
-                                currentTargetMobNames = isSea2 and {"Desert Thief [Lv. 3125]"} or {"Sand Bandit [Lv. 575]", "Desert Marauder [Lv. 675]"}
-                            elseif currentMat:find("Angellic's Feather") then currentTargetMobNames = {"Sky Soldier [Lv. 800]", "Cloud Warrior [Lv. 900]"}
-                            elseif currentMat:find("Gunpowder") then currentTargetMobNames = {"Naval personnel [Lv. 1200]", "Nautical soldier [Lv. 1350]", "Naval soldier [Lv. 1400]"}
-                            elseif currentMat:find("Undead's Ooze") then currentTargetMobNames = {"Zombie [Lv. 1500]"}
-                            elseif currentMat:find("Twilight's Orb") then currentTargetMobNames = {"Shadow Master [Lv. 1650]"}
-                            elseif currentMat:find("Sea Artifact") then currentTargetMobNames = {"Depths Voyager [Lv. 5300]"}
-                            elseif currentMat:find("Iron") then currentTargetMobNames = {"Dead Troupe [Lv. 3800]"}
-                            elseif currentMat:find("Carrot") then currentTargetMobNames = {"Beast Swordman [Lv. 2300]"}
-                            elseif currentMat:find("Samurai Bandage") then currentTargetMobNames = {"Violet Samurai [Lv. 2500]"}
-                            elseif currentMat:find("Bread Crumbs") then currentTargetMobNames = {"Chess Soldier [Lv. 3200]"}
-                            elseif currentMat:find("Ice Crystal") then currentTargetMobNames = {"Azlan [Lv. 3300]"}
-                            elseif currentMat:find("Magma Crystal") then currentTargetMobNames = {"The Volcano [Lv. 3325]"}
-                            elseif currentMat:find("Lost Ruby") then currentTargetMobNames = {"Pharaoh [Lv. 3175]"}
-                            elseif currentMat:find("Pile of Bones") then currentTargetMobNames = {"Skull Pirate [Lv. 3050]"}
-                            elseif currentMat:find("Dragon's Orb") or currentMat:find("Dragon' Orb") then currentTargetMobNames = {"Elite Skeleton [Lv. 3075]"}
-                            elseif currentMat:find("Lucidus's Totem") then currentTargetMobNames = {"Vice Admiral [Lv. 3500]"}
-                            elseif currentMat:find("Dark Beard's Totem") then currentTargetMobNames = {"Dark Beard Servant [Lv. 3400]"}
-                            elseif currentMat:find("Essence of Fire") then 
-                                currentTargetMobNames = isSea2 and {"Flame User [Lv. 3200]"} or {"Allosaurus [Lv. 5350]"}
-                            elseif currentMat:find("Pearl") then
-                                if isSea3 then currentTargetMobNames = {"Fugitive [Lv. 4050]"} end
-                            end
-
-                            local foundMobName = nil
-                            for _, mobName in ipairs(currentTargetMobNames) do
-                                local m = HuDy.FindMob(mobName)
-                                if m then
-                                    foundMobName = mobName
-                                    break
+                            -- Target Lock: Kiểm tra quái đã khoá còn sống không (Zero Workspace Scan khi quái đang bị đánh)
+                            local curLockedMob = HuDy.CurrentMaterialTargetMob
+                            local curLockedRoot = HuDy.CurrentMaterialTargetRoot
+                            local isLockedAlive = false
+                            if curLockedMob and curLockedMob.Parent and curLockedRoot and curLockedRoot.Parent then
+                                local hum = curLockedMob:FindFirstChildOfClass("Humanoid")
+                                if hum and hum.Health > 0 then
+                                    isLockedAlive = true
                                 end
                             end
 
-                            -- Cơ chế Round-Robin: Sau khi tiêu diệt xong đợt quái của Material này -> chuyển ngay sang Material kế tiếp
-                            if #selectedMats > 1 then
-                                if foundMobName then
+                            -- Kiểm tra Timeout của Round-Robin (ví dụ 20s nếu chọn nhiều material để không kẹt ở 1 bãi quá lâu)
+                            if isLockedAlive and #selectedMats > 1 and HuDy.MaterialWaveStartTime > 0 and (tick() - HuDy.MaterialWaveStartTime > 20) then
+                                isLockedAlive = false
+                                HuDy.CurrentMaterialTargetMob = nil
+                                HuDy.CurrentMaterialTargetRoot = nil
+                                HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
+                                HuDy.MaterialWaveStarted = false
+                                HuDy.MaterialWaveStartTime = tick()
+                                currentMat = selectedMats[HuDy.MaterialRoundRobinIndex] or selectedMats[1]
+                            end
+
+                            if isLockedAlive then
+                                -- Quái mục tiêu vẫn đang sống -> Tái sử dụng ngay lập tức, bỏ qua mọi scan workspace!
+                                data = HuDy.GetTargetDataByMob(curLockedMob.Name) or { MobName = curLockedMob.Name, SkipQuest = true }
+                                if data then
+                                    data.SkipQuest = true
+                                    data.TargetMob = curLockedMob
+                                    data.TargetRoot = curLockedRoot
+                                end
+                            else
+                                -- Quái cũ đã chết hoặc chưa khoá -> Reset khoá
+                                HuDy.CurrentMaterialTargetMob = nil
+                                HuDy.CurrentMaterialTargetRoot = nil
+
+                                local mobNames = HuDy.GetMobsForMaterial(currentMat)
+                                local foundMob, foundRoot, foundMobName = nil, nil, nil
+
+                                if mobNames and #mobNames > 0 then
+                                    for _, mName in ipairs(mobNames) do
+                                        local m, r = HuDy.FindMob(mName)
+                                        if m and r then
+                                            foundMob = m
+                                            foundRoot = r
+                                            foundMobName = mName
+                                            break
+                                        end
+                                    end
+                                end
+
+                                if foundMob and foundRoot then
+                                    -- Khoá mục tiêu mới!
+                                    HuDy.CurrentMaterialTargetMob = foundMob
+                                    HuDy.CurrentMaterialTargetRoot = foundRoot
                                     if not HuDy.MaterialWaveStarted then
                                         HuDy.MaterialWaveStarted = true
                                         HuDy.MaterialWaveStartTime = tick()
                                     end
-                                    -- Timeout 20s (Đủ thời gian diệt Boss máu trâu / quái trâu)
-                                    if tick() - HuDy.MaterialWaveStartTime > 20 then
-                                        HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
-                                        HuDy.MaterialWaveStarted = false
-                                        HuDy.MaterialWaveStartTime = tick()
+                                    data = HuDy.GetTargetDataByMob(foundMobName) or { MobName = foundMobName, SkipQuest = true }
+                                    if data then
+                                        data.SkipQuest = true
+                                        data.TargetMob = foundMob
+                                        data.TargetRoot = foundRoot
                                     end
                                 else
-                                    -- Nếu đã diệt xong cả bãi (hết quái) hoặc chưa có quái tại bãi này sau 3.5s
-                                    if HuDy.MaterialWaveStarted or (tick() - HuDy.MaterialWaveStartTime > 3.5) then
-                                        HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
-                                        HuDy.MaterialWaveStarted = false
-                                        HuDy.MaterialWaveStartTime = tick()
+                                    -- Chưa tìm thấy quái của Material này (bãi chưa spawn hoặc đã hết đợt)
+                                    if #selectedMats > 1 then
+                                        if HuDy.MaterialWaveStarted or (tick() - HuDy.MaterialWaveStartTime > 3.5) then
+                                            HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
+                                            HuDy.MaterialWaveStarted = false
+                                            HuDy.MaterialWaveStartTime = tick()
+                                        end
+                                    end
+
+                                    local defaultMob = (mobNames and mobNames[1]) or nil
+                                    if defaultMob then
+                                        data = HuDy.GetTargetDataByMob(defaultMob) or { MobName = defaultMob, SkipQuest = true }
+                                        if data then data.SkipQuest = true end
                                     end
                                 end
                             end
 
-                            local targetMob = foundMobName or currentTargetMobNames[1]
-                            if targetMob then
-                                data = HuDy.GetTargetDataByMob(targetMob) or { MobName = targetMob, SkipQuest = true }
-                                if data then data.SkipQuest = true end
-                            end
-
-                            -- 3. Xử lý Chặt cây nếu lượt hiện tại chọn Log hoặc không có quái (Chống kẹt 10s & chống nhảy vào nhà gỗ)
+                            -- 3. Xử lý Chặt cây nếu lượt hiện tại chọn Log hoặc không có quái
                             if not data then
-                                local isCurrentLog = currentMat:find("Log")
+                                local isCurrentLog = string.find(currentMat, "Log")
                                 if isCurrentLog then
-                                    local foundTree = HuDy.ChopTree(hrp)
+                                    local char = LocalPlayer.Character
+                                    local playerHrp = char and char:FindFirstChild("HumanoidRootPart")
+                                    local foundTree = HuDy.ChopTree(playerHrp)
 
-                                    if #selectedMats > 1 and tick() - HuDy.MaterialWaveStartTime > 8 then
+                                    if #selectedMats > 1 and (tick() - (HuDy.MaterialWaveStartTime or 0) > 8) then
                                         HuDy.MaterialRoundRobinIndex = (HuDy.MaterialRoundRobinIndex % #selectedMats) + 1
                                         HuDy.MaterialWaveStartTime = tick()
                                         HuDy.CurrentTree = nil
@@ -2306,138 +2471,84 @@ function HuDy.StartAutoFarm()
                         if cleanName:find(bName) then isBossTarget = true break end
                     end
 
-                    local spotMobs = (not isBossTarget) and HuDy.GetSpotMobs(data.MobName, spotPos, 350) or {}
+                    local targetMob, targetRoot = nil, nil
+                    local nowClock = tick()
                     
-                    -- LOGIC GOM QUÁI THÔNG MINH: Đánh từng con trong bãi để kéo aggro, chọn 1 con làm trung tâm để quái tự gom lại
-                    if HuDy.Flags.BringMobs and not isBossTarget and #spotMobs >= 2 then
-                        -- 1. Kiểm tra hoặc chọn Con Quái Trung Tâm (Center Mob)
-                        local centerMob = HuDy.CurrentCenterMob
-                        local centerRoot = HuDy.CurrentCenterRoot
-                        local isCenterValid = false
+                    local hasValidLockedTarget = false
+                    if data.TargetMob and data.TargetRoot and data.TargetMob.Parent and data.TargetRoot.Parent then
+                        local hum = data.TargetMob:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health > 0 then
+                            hasValidLockedTarget = true
+                        end
+                    end
+
+                    if hasValidLockedTarget and not (HuDy.Flags.BringMobs and not isBossTarget) then
+                        targetMob = data.TargetMob
+                        targetRoot = data.TargetRoot
+                    else
+                        local spotMobs = (not isBossTarget) and HuDy.GetSpotMobs(data.MobName, spotPos, 350) or {}
                         
-                        if centerMob and centerMob.Parent and centerRoot and centerRoot.Parent then
-                            local hum = centerMob:FindFirstChildOfClass("Humanoid")
-                            if hum and hum.Health > 0 then
-                                local mBase = string.lower(string.match(string.match(centerMob.Name, "^(.-)%s*%[") or centerMob.Name, "^%s*(.-)%s*$"))
-                                if mBase == cleanName then
-                                    isCenterValid = true
-                                end
+                        -- LOGIC GOM QUÁI THÔNG MINH BẰNG CÁCH NHẢY TARGET QUA LẠI:
+                        if HuDy.Flags.BringMobs and not isBossTarget and #spotMobs >= 2 then
+                            -- Tự động nhảy target qua lại giữa các con quái trong bãi sau mỗi 0.35s:
+                            -- Mỗi lần chuyển sang con mới, tung đòn đánh để kích hoạt AI quái đuổi theo.
+                            -- Do bot liên tục nhảy qua lại giữa các con quái, tất cả quái sẽ tự động chạy dồn về cùng 1 vị trí và gom lại thành 1 cục!
+                            if not HuDy.LastSpotTargetSwitch or (nowClock - HuDy.LastSpotTargetSwitch) >= 0.35 then
+                                HuDy.LastSpotTargetSwitch = nowClock
+                                HuDy.SpotTargetIndex = ((HuDy.SpotTargetIndex or 0) % #spotMobs) + 1
                             end
-                        end
-                        
-                        if not isCenterValid then
-                            local bestMob = spotMobs[1]
-                            centerMob = bestMob.Model
-                            centerRoot = bestMob.Root
-                            HuDy.CurrentCenterMob = centerMob
-                            HuDy.CurrentCenterRoot = centerRoot
-                            HuDy.AggroedMobs = HuDy.AggroedMobs or {}
-                            HuDy.AggroedMobs[centerMob] = tick()
-                        end
-                        
-                        -- 2. Quét tìm các con quái khác trong bãi chưa bị đánh để kéo aggro
-                        local unaggroMobs = {}
-                        for _, sm in ipairs(spotMobs) do
-                            if sm.Model ~= centerMob then
-                                local distToCenter = (sm.Root.Position - centerRoot.Position).Magnitude
-                                -- Nếu quái ở xa con trung tâm (> 18 studs), kiểm tra xem đã đánh nó chưa
-                                if distToCenter > 18 then
-                                    local lastAggro = HuDy.AggroedMobs and HuDy.AggroedMobs[sm.Model]
-                                    if not lastAggro or (tick() - lastAggro > 8) then
-                                        table.insert(unaggroMobs, sm)
-                                    end
-                                end
-                            end
-                        end
-                        
-                        -- 3. Tiến hành kéo hoặc dồn dame:
-                        if #unaggroMobs > 0 then
-                            -- Còn quái ở xa chưa aggro -> Lướt nhanh qua đánh 1 hit để kéo nó chạy về phía player & trung tâm
-                            local pullTarget = unaggroMobs[1]
-                            local pullPos = pullTarget.Root.Position + Vector3.new(0, -2, 0)
-                            local pullCFrame
-                            if mode == "Above" then
-                                pullCFrame = CFrame.new(pullPos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                            elseif mode == "Behind" then
-                                pullCFrame = (pullTarget.Root.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
-                            else
-                                pullCFrame = CFrame.new(pullPos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                            if not HuDy.SpotTargetIndex or HuDy.SpotTargetIndex < 1 or HuDy.SpotTargetIndex > #spotMobs then
+                                HuDy.SpotTargetIndex = 1
                             end
                             
-                            HuDy.TP(pullCFrame, pullTarget.Root.Position)
-                            if pullTarget.Root.CanCollide then pullTarget.Root.CanCollide = false end
-                            if pullTarget.Root.Anchored then pullTarget.Root.Anchored = false end
+                            local chosen = spotMobs[HuDy.SpotTargetIndex] or spotMobs[1]
+                            targetMob = chosen.Model
+                            targetRoot = chosen.Root
                             
-                            HuDy.Attack(pullTarget.Root)
-                            HuDy.AggroedMobs[pullTarget.Model] = tick()
-                            task.wait(0.12)
-                        else
-                            -- Toàn bộ quái trong bãi đã aggro -> Đứng vững tại Con Trung Tâm để toàn bộ quái dồn lại 1 chỗ
-                            local basePos = centerRoot.Position + Vector3.new(0, -2, 0)
-                            local targetCFrame
-                            if mode == "Above" then
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                            elseif mode == "Behind" then
-                                targetCFrame = (centerRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
-                            elseif mode == "Below" then
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
-                            else
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                            end
-                            
-                            -- Mở rộng Hitbox và tắt va chạm để các con quái lồng vào nhau tại trung tâm, dính trọn AOE
+                            -- Tắt va chạm (CanCollide = false) và mở rộng Hitbox để quái không cản đường nhau, tự động lồng vào nhau thành 1 cục
                             local SIZE_HITBOX = Vector3.new(15, 15, 15)
                             for _, sm in ipairs(spotMobs) do
                                 if sm.Root then
                                     if sm.Root.CanCollide then sm.Root.CanCollide = false end
-                                    if sm.Root.Size ~= SIZE_HITBOX then sm.Root.Size = SIZE_HITBOX end
                                     if sm.Root.Anchored then sm.Root.Anchored = false end
+                                    if sm.Root.Size ~= SIZE_HITBOX then sm.Root.Size = SIZE_HITBOX end
                                 end
                             end
-                            
-                            HuDy.TP(targetCFrame, centerRoot.Position)
-                            if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(centerRoot.Position, centerMob) and not HuDy.OpeRoomCasting then
-                                HuDy.CastOpeRoom(centerRoot.CFrame, centerMob)
-                            end
-                            HuDy.Attack(centerRoot)
-                        end
-                    else
-                        -- Đánh đơn lẻ (Target từng con / Boss hoặc khi tắt Gom quái / chỉ còn 1 con)
-                        local mob, mobRoot = nil, nil
-                        if #spotMobs > 0 then
-                            mob, mobRoot = spotMobs[1].Model, spotMobs[1].Root
+                        elseif #spotMobs > 0 then
+                            targetMob = spotMobs[1].Model
+                            targetRoot = spotMobs[1].Root
+                        elseif hasValidLockedTarget then
+                            targetMob = data.TargetMob
+                            targetRoot = data.TargetRoot
                         else
-                            mob, mobRoot = HuDy.FindMob(data.MobName)
+                            targetMob, targetRoot = HuDy.FindMob(data.MobName)
+                        end
+                    end
+                    
+                    if targetMob and targetRoot then
+                        local basePos = targetRoot.Position + Vector3.new(0, -2, 0)
+                        local targetCFrame
+                        if mode == "Above" then
+                            targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
+                        elseif mode == "Behind" then
+                            targetCFrame = (targetRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
+                        elseif mode == "Below" then
+                            targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
+                        else
+                            targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
                         end
                         
-                        if mob and mobRoot then
-                            local basePos = mobRoot.Position + Vector3.new(0, -2, 0)
-                            local targetCFrame
-                            if mode == "Above" then
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                            elseif mode == "Behind" then
-                                targetCFrame = (mobRoot.CFrame * CFrame.new(0, -2, 0)) * CFrame.new(0, 0, distance)
-                            elseif mode == "Below" then
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, -distance, 0)) * CFrame.Angles(math.rad(90), 0, 0)
-                            else
-                                targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
-                            end
-                            
-                            HuDy.TP(targetCFrame, mobRoot.Position)
-                            if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(mobRoot.Position, mob) and not HuDy.OpeRoomCasting then
-                                HuDy.CastOpeRoom(mobRoot.CFrame, mob)
-                            end
-                            HuDy.Attack(mobRoot)
+                        HuDy.TP(targetCFrame, targetRoot.Position)
+                        if HuDy.HasOpeV2 and HuDy.HasOpeV2() and not HuDy.IsOpeRoomActive(targetRoot.Position, targetMob) and not HuDy.OpeRoomCasting then
+                            HuDy.CastOpeRoom(targetRoot.CFrame, targetMob)
+                        end
+                        HuDy.Attack(targetRoot)
+                    else
+                        -- Không tìm thấy quái -> Bay lên cao tại data.CFrame để đợi quái spawn
+                        if data.CFrame then
+                            HuDy.TP(data.CFrame * CFrame.new(0, 0, 0)) 
                         else
-                            -- Không tìm thấy quái -> Bay lên cao tại data.CFrame để đợi quái spawn
-                            HuDy.CurrentCenterMob = nil
-                            HuDy.CurrentCenterRoot = nil
-                            HuDy.AggroedMobs = {}
-                            if data.CFrame then
-                                HuDy.TP(data.CFrame * CFrame.new(0, 0, 0)) 
-                            else
-                                HuDy.StopTP()
-                            end
+                            HuDy.StopTP()
                         end
                     end
                 end
@@ -2530,6 +2641,18 @@ function HuDy.GetDungeonGateEntrance()
     end
     
     return CFrame.new(10959.2, 133.8, 1250.7)
+end
+
+function HuDy.IsDungeonBossMob(m)
+    if not m then return false end
+    local mModel = m.Model or m
+    local mHum = m.Hum or (mModel and mModel:FindFirstChildOfClass("Humanoid"))
+    local mName = string.lower((mModel and mModel.Name) or "")
+    if mName:find("chaos crab") or mName:find("craberno") or mName:find("crab") then return true end
+    if mName:find("warden") and not mName:find("bane") then return true end
+    if mHum and mHum.MaxHealth >= 400000 then return true end
+    if mModel.Parent and mModel.Parent.Name == "Boss" then return true end
+    return false
 end
 
 function HuDy.GetAllDungeonMobs()
@@ -2873,7 +2996,7 @@ function HuDy.IsChaosCrabWarningActive(mobs, elevatorCenter)
         -- Tính vị trí né DUY NHẤT MỘT LẦN quanh thang máy: Bay cao +300 studs né trọn vùng nổ rộng lớn, bán kính 380 studs (Khóa bằng Heartbeat + Noclip chống giật lùi)
         local origin = elevatorCenter or (targetCrab.Root and targetCrab.Root.Position) or Vector3.new(0, 0, 0)
         local angle = math.random() * math.pi * 2
-        local dodgeRadius = 380
+        local dodgeRadius = 450
         local offsetX = math.cos(angle) * dodgeRadius
         local offsetZ = math.sin(angle) * dodgeRadius
         HuDy.CrabDodgePos = Vector3.new(origin.X + offsetX, origin.Y + 300, origin.Z + offsetZ)
@@ -3222,13 +3345,57 @@ function HuDy.StartAutoDungeon()
                 end
                 
                 if #validMobs > 0 then
-                    -- Luân chuyển mục tiêu mượt mà (0.6s đổi mục tiêu một lần để kích aggro gom quái ổn định, không bị giật lag)
-                    local nowClock = tick()
-                    if not HuDy.LastDungeonTargetSwitch or (nowClock - HuDy.LastDungeonTargetSwitch) >= 0.6 then
-                        HuDy.LastDungeonTargetSwitch = nowClock
-                        HuDy.DungeonTargetIndex = ((HuDy.DungeonTargetIndex or 0) % #validMobs) + 1
+                    -- PHÂN LOẠI BOSS VÀ QUÁI THƯỜNG (TRONG / NGOÀI BÁN KÍNH 50 STUD TỪ THANG MÁY)
+                    local bossMobTarget = nil
+                    local bossMobTarget = nil
+                    local normalMobs = {}
+                    
+                    for _, m in ipairs(validMobs) do
+                        if m.Root and m.Hum and m.Hum.Health > 0 then
+                            if HuDy.IsDungeonBossMob(m) then
+                                if not bossMobTarget then bossMobTarget = m end
+                            else
+                                table.insert(normalMobs, m)
+                            end
+                        end
                     end
-                    local target = validMobs[HuDy.DungeonTargetIndex] or validMobs[1]
+                    
+                    local target = nil
+                    local isTargetBoss = false
+                    
+                    if bossMobTarget then
+                        target = bossMobTarget
+                        isTargetBoss = true
+                    elseif #normalMobs > 0 then
+                        if (HuDy.Flags.DungeonCenterGather ~= false) and (#normalMobs >= 2) then
+                            -- GOM QUÁI DUNGEON BẰNG CÁCH NHẢY TARGET QUA LẠI:
+                            -- Luân chuyển target giữa các con quái trong wave sau mỗi 0.35s.
+                            -- Mỗi lần chuyển, bot bay tới đánh 1-2 đòn để quái aggro đuổi theo người chơi.
+                            -- Toàn bộ quái thường trong tầng sẽ cùng lúc chạy dồn lại và tự động gom thành 1 cục!
+                            local nowClock = tick()
+                            if not HuDy.LastDungeonTargetSwitch or (nowClock - HuDy.LastDungeonTargetSwitch) >= 0.35 then
+                                HuDy.LastDungeonTargetSwitch = nowClock
+                                HuDy.DungeonTargetIndex = ((HuDy.DungeonTargetIndex or 0) % #normalMobs) + 1
+                            end
+                            target = normalMobs[HuDy.DungeonTargetIndex] or normalMobs[1]
+                        else
+                            target = normalMobs[1]
+                        end
+                        
+                        -- Tắt va chạm (CanCollide = false) và mở rộng Hitbox để các con quái lồng vào nhau tại 1 điểm, dính trọn AOE
+                        local SIZE_HITBOX = Vector3.new(15, 15, 15)
+                        for _, m in ipairs(normalMobs) do
+                            if m.Root then
+                                if m.Root.CanCollide then m.Root.CanCollide = false end
+                                if m.Root.Anchored then m.Root.Anchored = false end
+                                if m.Root.Size ~= SIZE_HITBOX then m.Root.Size = SIZE_HITBOX end
+                            end
+                        end
+                    else
+                        target = validMobs[1]
+                        isTargetBoss = HuDy.IsDungeonBossMob(target)
+                    end
+                    
                     local targetRoot = target and target.Root
                     local targetMob = target and target.Model
                     
@@ -3291,11 +3458,11 @@ function HuDy.StartAutoDungeon()
                             end
                         else
                             if not HuDy.CrabBombActive then HuDy.CrabDodgePos = nil end
-                            -- D. VỊ TRÍ ĐÁNH BÌNH THƯỜNG (Quái thường + Boss khi không tung chiêu):
+                            -- D. VỊ TRÍ ĐÁNH BÌNH THƯỜNG (Bay đến bám sát mục tiêu và tấn công):
                             local farmMode = HuDy.Flags.FarmMode or "Above"
                             local distance = tonumber(HuDy.Flags.FarmDistance) or 8
                             
-                            -- Riêng Boss Chaos Crab to lớn: cộng thêm khoảng cách an toàn (+12 studs) để không bị kẹt hitbox
+                            -- Nếu Chaos Crab to lớn thì +10 studs an toàn
                             local isTargetCrab = false
                             if targetMob then
                                 local tName = string.lower(targetMob.Name or "")
@@ -3308,10 +3475,8 @@ function HuDy.StartAutoDungeon()
                             end
                             
                             local basePos = targetRoot.Position + Vector3.new(0, -2, 0)
-                            -- FIX BỊ CHÌM NƯỚC: Thay vì bay lên trời, TP thẳng vào xúc tu và khóa cứng tọa độ (Anti Nước)
                             if targetMob and (string.find(string.lower(targetMob.Name or ""), "tentacle") or string.find(string.lower(targetMob.Name or ""), "kraken")) then
                                 basePos = targetRoot.Position
-                                -- Anti đẩy nước
                                 local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
                                 if hum then pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false) end) end
                             end
@@ -3325,6 +3490,7 @@ function HuDy.StartAutoDungeon()
                             else
                                 targetCFrame = CFrame.new(basePos + Vector3.new(0, distance, 0)) * CFrame.Angles(math.rad(-90), 0, 0)
                             end
+                            lookPos = targetRoot.Position
                         end
                         
                         HuDy.TP(targetCFrame, lookPos)
@@ -3350,7 +3516,7 @@ function HuDy.StartAutoDungeon()
                     -- Không có quái -> Đang đếm ngược chuyển tầng (10s) hoặc chờ quái spawn
                     if elevator then
                         -- Đứng thẳng tự nhiên bình thường trên sàn thang máy (cách mặt sàn 3.5 studs, không bị nghiêng/khóa nằm ngang)
-                        local standPos = elevator.Position + Vector3.new(0, 3.5, 0)
+                        local standPos = elevator.Position + Vector3.new(0, 20, 0)
                         local _, yRot, _ = elevator.CFrame:ToEulerAnglesYXZ()
                         local standCFrame = CFrame.new(standPos) * CFrame.Angles(0, yRot, 0)
                         HuDy.TP(standCFrame, nil, true)
@@ -3912,6 +4078,807 @@ task.spawn(function()
 end)
 
 -- ==============================================================================
+-- 6.5. KIORU SWORD MODULE (KIORU V1 QUEST CHAIN & KIORU V2 PIPELINE)
+-- ==============================================================================
+local KIORU_V1_NPC_CFRAME = CFrame.new(-380.5, 56.7, 8082.7)
+local KIORU_V2_NPC_CFRAME = CFrame.new(-628, 187, 4022)
+
+local KIORU_V1_QUESTS = {
+    { Name = "Kappa", FullName = "Kappa [Lv. 2950]", QuestAwake = "Kioru Quest 1", SpawnCF = CFrame.new(-4845.7, 53.9, 2005) },
+    { Name = "Anubis", FullName = "Anubis [Lv. 3150]", QuestAwake = "Kioru Quest 2", SpawnCF = CFrame.new(2108, 11, 958) },
+    { Name = "Flame User", FullName = "Flame User [Lv. 3200]", QuestAwake = "Kioru Quest 3", SpawnCF = CFrame.new(2031.2, 14.6, 1354.4) },
+    { Name = "Sunken Vessel", FullName = "Sunken Vessel [Lv. 3225]", QuestAwake = "Kioru Quest 4", SpawnCF = CFrame.new(-1102, 50.9, 8234.8) },
+    { Name = "Biscuit Man", FullName = "Biscuit Man [Lv. 3250]", QuestAwake = "Kioru Quest 5", SpawnCF = CFrame.new(-1532.7, 188.6, 8864.6) },
+    { Name = "Dough Master", FullName = "Dough Master [Lv. 3275]", QuestAwake = "Kioru Quest 6", SpawnCF = CFrame.new(30279.0, 69.3, 93166.2) }
+}
+
+function HuDy.GetCurrentSea()
+    if game.PlaceId == 6381829480 or game.PlaceId == 6500329016 then
+        return 2
+    elseif game.PlaceId == 15759515082 or game.PlaceId == 15760829898 then
+        return 3
+    else
+        return 1
+    end
+end
+
+function HuDy.TeleportToSea(seaName)
+    pcall(function()
+        local args = { "TeleportSea", { SeaName = seaName } }
+        local chest = ReplicatedStorage:FindFirstChild("Chest") or ReplicatedStorage:WaitForChild("Chest", 5)
+        local remotes = chest and (chest:FindFirstChild("Remotes") or chest:WaitForChild("Remotes", 5))
+        local funcs = remotes and (remotes:FindFirstChild("Functions") or remotes:WaitForChild("Functions", 5))
+        local etcFunc = funcs and (funcs:FindFirstChild("EtcFunction") or funcs:WaitForChild("EtcFunction", 5))
+        if etcFunc then
+            etcFunc:InvokeServer(unpack(args))
+        end
+    end)
+end
+
+function HuDy.CheckHasKioruV1()
+    local inv = LocalPlayer:FindFirstChild("Inventory")
+    if inv then
+        if inv:FindFirstChild("Kioru") or inv:FindFirstChild("Kioru [Sword]") then
+            return true
+        end
+        for _, it in ipairs(inv:GetChildren()) do
+            local ln = string.lower(string.gsub(it.Name, "%s+", ""))
+            if ln == "kioru" or ln == "kiorusword" then
+                return true
+            end
+        end
+    end
+
+    local bp = LocalPlayer:FindFirstChild("Backpack")
+    if bp and (bp:FindFirstChild("Kioru") or bp:FindFirstChild("Kioru [Sword]")) then
+        return true
+    end
+    local char = LocalPlayer.Character
+    if char and (char:FindFirstChild("Kioru") or char:FindFirstChild("Kioru [Sword]")) then
+        return true
+    end
+
+    local pgui = LocalPlayer:FindFirstChild("PlayerGui")
+    local mainGui = pgui and pgui:FindFirstChild("MainGui")
+    local starterFrame = mainGui and mainGui:FindFirstChild("StarterFrame")
+    local invFrame = starterFrame and starterFrame:FindFirstChild("Inventory_Frame")
+    if invFrame then
+        for _, frameName in ipairs({"ScrollingFrameSword", "ScrollingFrameItems", "ScrollingFrameWeapon", "ScrollingFrameFighting"}) do
+            local f = invFrame:FindFirstChild(frameName)
+            if f and (f:FindFirstChild("Kioru") or f:FindFirstChild("Kioru [Sword]")) then
+                return true
+            end
+        end
+    end
+
+    local stats = LocalPlayer:FindFirstChild("PlayerStats")
+    if stats then
+        for _, obj in ipairs(stats:GetDescendants()) do
+            local n = string.lower(string.gsub(obj.Name, "%s+", ""))
+            if n == "kioru" or n == "kiorusword" then
+                local val = tostring(obj.Value or "")
+                if val ~= "" and val ~= "0" and val ~= "false" and string.lower(val) ~= "no" then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+function HuDy.CheckHasKioruV2()
+    local inv = LocalPlayer:FindFirstChild("Inventory")
+    if inv then
+        if inv:FindFirstChild("Kioru V2") or inv:FindFirstChild("Kioru V2 [Sword]") or inv:FindFirstChild("KioruV2") then
+            return true
+        end
+        for _, it in ipairs(inv:GetChildren()) do
+            local ln = string.lower(string.gsub(it.Name, "%s+", ""))
+            if ln == "kioruv2" or ln == "kioruv2sword" then
+                return true
+            end
+        end
+    end
+
+    local bp = LocalPlayer:FindFirstChild("Backpack")
+    if bp and (bp:FindFirstChild("Kioru V2") or bp:FindFirstChild("Kioru V2 [Sword]") or bp:FindFirstChild("KioruV2")) then
+        return true
+    end
+    local char = LocalPlayer.Character
+    if char and (char:FindFirstChild("Kioru V2") or char:FindFirstChild("Kioru V2 [Sword]") or char:FindFirstChild("KioruV2")) then
+        return true
+    end
+
+    local pgui = LocalPlayer:FindFirstChild("PlayerGui")
+    local mainGui = pgui and pgui:FindFirstChild("MainGui")
+    local starterFrame = mainGui and mainGui:FindFirstChild("StarterFrame")
+    local invFrame = starterFrame and starterFrame:FindFirstChild("Inventory_Frame")
+    if invFrame then
+        for _, frameName in ipairs({"ScrollingFrameSword", "ScrollingFrameItems", "ScrollingFrameWeapon"}) do
+            local f = invFrame:FindFirstChild(frameName)
+            if f and (f:FindFirstChild("Kioru V2") or f:FindFirstChild("Kioru V2 [Sword]") or f:FindFirstChild("KioruV2")) then
+                return true
+            end
+        end
+    end
+
+    local stats = LocalPlayer:FindFirstChild("PlayerStats")
+    if stats then
+        for _, obj in ipairs(stats:GetDescendants()) do
+            local n = string.lower(string.gsub(obj.Name, "%s+", ""))
+            if n == "kioruv2" or n == "kioruv2sword" then
+                local val = tostring(obj.Value or "")
+                if val ~= "" and val ~= "0" and val ~= "false" and string.lower(val) ~= "no" then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+function HuDy.CheckKioruV2Titles()
+    local stats = LocalPlayer:FindFirstChild("PlayerStats")
+    local titleStore = stats and stats:FindFirstChild("TitleStore")
+    local val = (titleStore and titleStore:IsA("StringValue") and titleStore.Value) or ""
+    
+    local hasTS = string.find(val, "Tyrant Slayer") ~= nil
+    local hasKB = string.find(val, "Krakenbane") ~= nil
+    local hasSB = string.find(val, "Shellbreaker") ~= nil
+    local hasDB = string.find(val, "Dragonbane") ~= nil
+    local allOk = hasTS and hasKB and hasSB and hasDB
+    local count = (hasTS and 1 or 0) + (hasKB and 1 or 0) + (hasSB and 1 or 0) + (hasDB and 1 or 0)
+    return allOk, count, {
+        TyrantSlayer = hasTS,
+        Krakenbane = hasKB,
+        Shellbreaker = hasSB,
+        Dragonbane = hasDB
+    }
+end
+
+-- Kiểm tra xem nhiệm vụ Kioru thứ idx (1..6) đã hoàn thành chưa qua _G.CheckAwakeClient
+function HuDy.IsKioruV1QuestDone(questIdx)
+    local fn = _G.CheckAwakeClient
+    if type(fn) == "function" and KIORU_V1_QUESTS[questIdx] then
+        local ok, done = pcall(fn, LocalPlayer, KIORU_V1_QUESTS[questIdx].QuestAwake)
+        if ok and done == true then
+            return true
+        end
+    end
+    return false
+end
+
+-- Lấy vị trí Quest tiếp theo cần làm (1..6) hoặc 7 nếu đã hoàn thành cả 6 quest
+function HuDy.GetKioruV1CurrentQuestIndex()
+    local fn = _G.CheckAwakeClient
+    if type(fn) == "function" then
+        for i = 1, 6 do
+            local ok, done = pcall(fn, LocalPlayer, KIORU_V1_QUESTS[i].QuestAwake)
+            if not ok or not done then
+                return i
+            end
+        end
+        return 7
+    end
+    return 1
+end
+
+-- Kiểm tra xem người chơi có đang có quest Kioru nào đang thực sự active trên màn hình không
+function HuDy.GetActiveKioruQuest()
+    local pgui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not pgui then return nil, nil end
+
+    local mainGui = pgui:FindFirstChild("MainGui")
+    local qFrame = mainGui and mainGui:FindFirstChild("QuestFrame")
+    local qBoard = qFrame and qFrame:FindFirstChild("QuestBoard")
+
+    -- 1. BẮT BUỘC: QuestBoard và QuestFrame phải đang Visible
+    if not qBoard or qBoard.Visible == false then
+        return nil, nil
+    end
+    if qFrame and qFrame.Visible == false then
+        return nil, nil
+    end
+
+    local textFrame = qBoard:FindFirstChild("TextFrame")
+    local qTitle = textFrame and textFrame:FindFirstChild("QuestName")
+    local qCount = textFrame and textFrame:FindFirstChild("QuestCount")
+
+    -- 2. Kiểm tra tiến độ: Nếu đã là (1/1) nghĩa là quái đã chết, quest đã xong -> không farm nữa
+    if qCount and qCount.Text and (string.find(qCount.Text, "%(1/1%)") or string.find(qCount.Text, "1/1")) then
+        return nil, nil
+    end
+
+    -- 3. Khớp tên nhiệm vụ với 6 quái Kioru
+    if qTitle and qTitle.Text and qTitle.Text ~= "" and qTitle.Text ~= "????" then
+        local rawText = string.lower(qTitle.Text)
+        for idx, qData in ipairs(KIORU_V1_QUESTS) do
+            if string.find(rawText, string.lower(qData.Name), 1, true) then
+                return idx, qData
+            end
+        end
+    end
+
+    return nil, nil
+end
+
+-- Kiểm tra xem nhiệm vụ Kioru cụ thể (hoặc bất kỳ quest Kioru nào) có đang active
+function HuDy.IsKioruQuestActive(expectedMobName)
+    local activeIdx, activeQData = HuDy.GetActiveKioruQuest()
+    if not activeQData then return false end
+    if not expectedMobName then return true end
+    return string.find(string.lower(activeQData.Name), string.lower(expectedMobName), 1, true) ~= nil
+end
+
+-- Mở hội thoại và click Accept thật tại NPC Kioru V1 (-380.5, 56.7, 8082.7)
+function HuDy.InteractWithKioruV1NPC(expectedMobName, isBuying)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+
+    -- 1. Tìm NPC QuestKioru trong Workspace
+    local npcModel, npcPart = HuDy.FindNPC("QuestKioru")
+    if not npcPart then
+        npcModel = workspace:FindFirstChild("QuestKioru", true)
+        if npcModel then
+            npcPart = npcModel:FindFirstChild("HumanoidRootPart") or npcModel:FindFirstChild("Head") or npcModel:FindFirstChildWhichIsA("BasePart")
+        end
+    end
+
+    -- 2. Dịch chuyển sát mặt NPC và quay mặt thẳng vào NPC
+    if npcPart then
+        hrp.CFrame = CFrame.new((npcPart.CFrame * CFrame.new(0, 0, 3)).Position, npcPart.Position)
+    else
+        hrp.CFrame = KIORU_V1_NPC_CFRAME
+    end
+    pcall(function()
+        hrp.AssemblyLinearVelocity = Vector3.zero
+        hrp.Velocity = Vector3.zero
+    end)
+    task.wait(0.3)
+
+    -- 3. Hướng camera thẳng vào NPC
+    local cam = workspace.CurrentCamera
+    if cam then
+        local targetPos = (npcPart and npcPart.Position) or KIORU_V1_NPC_CFRAME.Position
+        cam.CFrame = CFrame.lookAt(cam.CFrame.Position, targetPos)
+    end
+    task.wait(0.2)
+
+    -- [PHƯƠNG THỨC MỞ 1]: Kích hoạt ProximityPrompt / ClickDetector của NPC
+    if npcModel then
+        pcall(function()
+            for _, v in ipairs(npcModel:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    if firesignal then firesignal(v.TriggerEnded) end
+                    v:InputHoldBegin()
+                    task.wait(0.05)
+                    v:InputHoldEnd()
+                elseif v:IsA("ClickDetector") then
+                    if fireclickdetector then fireclickdetector(v) end
+                end
+            end
+        end)
+    end
+
+    -- [PHƯƠNG THỨC MỞ 2]: Click chuột 3D vào giữa màn hình để mở NPC & phím E
+    local vim = game:GetService("VirtualInputManager")
+    pcall(function()
+        if cam and vim then
+            local vX = cam.ViewportSize.X / 2
+            local vY = cam.ViewportSize.Y / 2
+            for i = 1, 3 do
+                vim:SendMouseButtonEvent(vX, vY, 0, true, game, 1)
+                task.wait(0.05)
+                vim:SendMouseButtonEvent(vX, vY, 0, false, game, 1)
+                task.wait(0.1)
+            end
+            vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            task.wait(0.05)
+            vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+        end
+    end)
+
+    -- [PHƯƠNG THỨC MỞ 3]: Thử gọi Remote TalkNPC / CheckQuest
+    pcall(function()
+        local etc = ReplicatedStorage:FindFirstChild("Chest") and ReplicatedStorage.Chest.Remotes.Functions:FindFirstChild("EtcFunction")
+        if etc then
+            etc:InvokeServer("TalkNPC", "QuestKioru")
+        end
+    end)
+
+    -- Đảm bảo UI QuestKioru hiển thị
+    local pgui = LocalPlayer:FindFirstChild("PlayerGui")
+    local qGui = pgui and pgui:FindFirstChild("QuestKioru")
+    if qGui then
+        qGui.Enabled = true
+        if qGui:FindFirstChild("Dialogue") then
+            qGui.Dialogue.Visible = true
+        end
+    end
+
+    -- Chờ dialogue và nút Accept xuất hiện (tối đa 1.5s)
+    local acceptBtn = nil
+    for waitStep = 1, 15 do
+        qGui = pgui and pgui:FindFirstChild("QuestKioru")
+        if qGui and qGui:FindFirstChild("Dialogue") then
+            acceptBtn = qGui.Dialogue:FindFirstChild("Accept")
+            if acceptBtn and acceptBtn.Visible and acceptBtn.AbsoluteSize.X > 0 then
+                break
+            end
+        end
+        task.wait(0.1)
+    end
+
+    -- Nếu nút Accept chưa Visible do dialogue đang gõ chữ -> Force visible
+    if qGui and qGui:FindFirstChild("Dialogue") then
+        local dialogue = qGui.Dialogue
+        acceptBtn = dialogue:FindFirstChild("Accept") or acceptBtn
+        if acceptBtn then
+            acceptBtn.Visible = true
+        end
+    end
+
+    -- [PHƯƠNG THỨC CLICK THẬT VÀO NÚT ACCEPT NHƯ CÁC QUEST KHÁC]:
+    -- Thực hiện kết hợp: Focus GuiService + Spam phím Return (Enter) thật + Chuột click thật vào tọa độ + firesignal
+    local clicked = false
+    if acceptBtn then
+        _G.NPCTalk = false
+
+        -- 1. Focus qua GuiService và spam phím Return (Enter) + Space thật
+        pcall(function()
+            if acceptBtn and acceptBtn:IsA("GuiObject") and acceptBtn.Visible and acceptBtn.Parent then
+                pcall(function() GuiService.SelectedObject = acceptBtn end)
+            end
+            task.wait(0.08)
+            for spam = 1, 6 do
+                vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.04)
+                vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.04)
+            end
+            vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+            task.wait(0.04)
+            vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            pcall(function() GuiService.SelectedObject = nil end)
+        end)
+
+        -- 2. Click chuột thật vào tọa độ nút Accept (có bù trừ Inset)
+        pcall(function()
+            if vim then
+                local absPos = acceptBtn.AbsolutePosition
+                local absSize = acceptBtn.AbsoluteSize
+                local inset = GuiService:GetGuiInset()
+                local clickX = absPos.X + absSize.X / 2
+                local clickY = absPos.Y + absSize.Y / 2 + inset.Y
+
+                -- Click thật có inset
+                vim:SendMouseButtonEvent(clickX, clickY, 0, true, game, 1)
+                task.wait(0.08)
+                vim:SendMouseButtonEvent(clickX, clickY, 0, false, game, 1)
+                task.wait(0.08)
+
+                -- Click thật không inset (offset 36px topbar chuẩn)
+                local rawY = absPos.Y + absSize.Y / 2 + 36
+                vim:SendMouseButtonEvent(clickX, rawY, 0, true, game, 1)
+                task.wait(0.08)
+                vim:SendMouseButtonEvent(clickX, rawY, 0, false, game, 1)
+            end
+        end)
+
+        -- 3. firesignal (kích hoạt các event listener trên button)
+        pcall(function()
+            if firesignal then
+                firesignal(acceptBtn.MouseButton1Click)
+                firesignal(acceptBtn.Activated)
+            end
+        end)
+
+        -- 4. Click giải phóng tâm màn hình (bypass WaitForInteraction nếu có)
+        pcall(function()
+            if cam and vim then
+                local vX = cam.ViewportSize.X / 2
+                local vY = cam.ViewportSize.Y / 2
+                vim:SendMouseButtonEvent(vX, vY, 0, true, game, 1)
+                task.wait(0.05)
+                vim:SendMouseButtonEvent(vX, vY, 0, false, game, 1)
+            end
+        end)
+
+        clicked = true
+    end
+
+    -- [PHƯƠNG THỨC 4 FALLBACK]: Tìm mọi nút Accept/Confirm trong toàn bộ GUI và click thật
+    if not clicked and pgui then
+        for _, v in ipairs(pgui:GetDescendants()) do
+            if (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible and v.AbsoluteSize.X > 0 then
+                local name = string.lower(v.Name)
+                local text = v:IsA("TextButton") and string.lower(v.Text) or ""
+                if string.find(name, "accept") or string.find(text, "accept") then
+                    pcall(function()
+                        if v and v:IsA("GuiObject") and v.Visible and v.Parent then
+                            pcall(function() GuiService.SelectedObject = v end)
+                        end
+                        task.wait(0.08)
+                        for spam = 1, 5 do
+                            vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                            task.wait(0.04)
+                            vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                        end
+                        if firesignal then
+                            firesignal(v.MouseButton1Click)
+                            firesignal(v.Activated)
+                        end
+                        pcall(function() GuiService.SelectedObject = nil end)
+                    end)
+                    clicked = true
+                    break
+                end
+            end
+        end
+    end
+
+    return clicked
+end
+
+function HuDy.CheckKioruV2StatusNotify()
+    local hasV1 = HuDy.CheckHasKioruV1()
+    local hasV2 = HuDy.CheckHasKioruV2()
+    local stats = LocalPlayer:FindFirstChild("PlayerStats")
+    local beli = stats and stats:FindFirstChild("beli") and stats.beli.Value or 0
+    local lvl = stats and stats:FindFirstChild("lvl") and stats.lvl.Value or 0
+    local titlesOk, titleCount, missing = HuDy.CheckKioruV2Titles()
+    local qIdx = HuDy.GetKioruV1CurrentQuestIndex()
+
+    local lines = {}
+    table.insert(lines, "• Level: " .. tostring(lvl) .. (lvl >= 3300 and " ✅" or " (Cần Lv 3300) ⚠️"))
+    table.insert(lines, "• Kioru V1: " .. (hasV1 and "✅ ĐÃ CÓ" or string.format("❌ CHƯA CÓ (Quest %d/6)", math.min(qIdx, 6))))
+    table.insert(lines, "• Kioru V2: " .. (hasV2 and "✅ ĐÃ CÓ" or "❌ CHƯA CÓ"))
+    table.insert(lines, string.format("• Beli: $%s / $55.5M %s", tostring(beli), beli >= 55555555 and "✅" or "⚠️"))
+    table.insert(lines, string.format("• Titles: %d/4 (TS, KB, SB, DB) %s", titleCount, titlesOk and "✅" or "⚠️"))
+
+    if WindUI and WindUI.Notify then
+        WindUI:Notify({
+            Title = "Trạng Thái Auto Kioru Pipeline",
+            Content = table.concat(lines, "\n"),
+            Icon = "solar:info-circle-bold",
+            Duration = 6
+        })
+    end
+end
+
+-- ==============================================================================
+-- TIẾN TRÌNH TỰ ĐỘNG TOÀN DIỆN: KIORU V1 (QUEST CHAIN) -> TITLES (SET SAIL) -> KIORU V2
+-- ==============================================================================
+function HuDy.StartAutoKioruV2()
+    if HuDy.KioruV2Running then return end
+    HuDy.KioruV2Running = true
+
+    task.spawn(function()
+        print("[HuDy Hub] ⚔️ BẮT ĐẦU AUTO KIORU PIPELINE...")
+
+        while HuDy.Flags.AutoKioruV2 do
+            task.wait(0.5)
+
+            -- BƯỚC 0: KIỂM TRA ĐÃ SỞ HỮU KIORU V2 CHƯA
+            if HuDy.CheckHasKioruV2() then
+                print("[HuDy Hub] 🎉 ĐÃ SỞ HỮU KIORU V2! Hoàn thành quy trình.")
+                if WindUI and WindUI.Notify then
+                    WindUI:Notify({
+                        Title = "Auto Kioru V2",
+                        Content = "🎉 CHÚC MỪNG! Bạn đã sở hữu thành công kiếm Kioru V2!",
+                        Icon = "solar:check-circle-bold",
+                        Duration = 6
+                    })
+                end
+                HuDy.Flags.AutoKioruV2 = false
+                HuDy.Flags.AutoHopSetSailSelect = false
+                HuDy.SaveConfig()
+                HuDy.StopTP()
+                break
+            end
+
+            -- BƯỚC 1: KIỂM TRA SỞ HỮU KIORU V1
+            local hasV1 = HuDy.CheckHasKioruV1()
+
+            if not hasV1 then
+                -- =====================================================================
+                -- NHÁNH B: CHƯA CÓ KIORU V1 -> LÀM CHUỖI 6 NHIỆM VỤ TẠI SEA 2 VÀ MUA V1
+                -- =====================================================================
+                local currentSea = HuDy.GetCurrentSea()
+                if currentSea ~= 2 then
+                    print(string.format("[HuDy Hub] 📍 Đang ở Sea %d -> Dịch chuyển về Sea 2 để làm Quest Kioru V1...", currentSea))
+                    if WindUI and WindUI.Notify then
+                        WindUI:Notify({
+                            Title = "Auto Kioru V1",
+                            Content = string.format("Đang ở Sea %d -> Dịch chuyển về Sea 2 làm Quest Kioru V1...", currentSea),
+                            Icon = "solar:map-bold",
+                            Duration = 4
+                        })
+                    end
+                    HuDy.TeleportToSea("SecondSea")
+                    task.wait(6)
+                    continue
+                end
+
+                -- Kiểm tra Level (Yêu cầu Lv >= 3300)
+                local stats = LocalPlayer:FindFirstChild("PlayerStats")
+                local lvl = stats and stats:FindFirstChild("lvl") and stats.lvl.Value or 0
+                if lvl < 3300 then
+                    warn(string.format("[HuDy Hub] ⚠️ Level hiện tại: %d < 3300. Cần cày đủ Lv 3300 trước!", lvl))
+                    if WindUI and WindUI.Notify then
+                        WindUI:Notify({
+                            Title = "Auto Kioru V1",
+                            Content = string.format("⚠️ Level của bạn (%d) chưa đủ Lv 3300 để nhận nhiệm vụ Kioru!", lvl),
+                            Icon = "solar:danger-triangle-bold",
+                            Duration = 4
+                        })
+                    end
+                    task.wait(4)
+                end
+
+                -- 1. ƯU TIÊN SỐ 1: NẾU TRÊN MÀN HÌNH ĐANG CÓ BẤT KỲ QUEST KIORU NÀO (1..6)
+                local activeIdx, activeQData = HuDy.GetActiveKioruQuest()
+
+                if activeQData then
+                    -- ==============================================================
+                    -- ĐÃ CÓ QUEST TRÊN MÀN HÌNH (Ví dụ: Flame User [Lv. 3200], Anubis, Kappa...)
+                    -- -> LẬP TỨC ĐẾN BÃI QUÁI TIÊU DIỆT QUÁI! TUYỆT ĐỐI KHÔNG QUAY VỀ NPC!
+                    -- ==============================================================
+                    local mob, mobRoot = HuDy.FindMob(activeQData.Name)
+                    if mob and mobRoot then
+                        local farmDist = HuDy.Flags.FarmDistance or 8
+                        local targetCF = mobRoot.CFrame * CFrame.new(0, farmDist, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                        HuDy.TP(targetCF, mobRoot.Position)
+                        HuDy.Attack(mobRoot)
+                    else
+                        -- Quái chưa load / chưa xuất hiện -> Bay tới tọa độ spawn của quái
+                        HuDy.TP(activeQData.SpawnCF)
+                        task.wait(0.4)
+                    end
+                else
+                    -- ==============================================================
+                    -- CHƯA CÓ QUEST KIORU TRÊN MÀN HÌNH (HOẶC VỪA ĐÁNH XONG QUÁI, QUEST ĐÃ HOÀN THÀNH)
+                    -- -> ĐẾN NPC (-380.5, 56.7, 8082.7) ĐỂ NHẬN NHIỆM VỤ TIẾP THEO HOẶC MUA KIORU V1
+                    -- ==============================================================
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local distNPC = hrp and (hrp.Position - KIORU_V1_NPC_CFRAME.Position).Magnitude or 999
+
+                    if distNPC > 10 then
+                        HuDy.TP(KIORU_V1_NPC_CFRAME)
+                    else
+                        HuDy.StopTP()
+                        hrp.CFrame = KIORU_V1_NPC_CFRAME
+                        task.wait(0.3)
+
+                        -- Kiểm tra xem đã hoàn thành cả 6 quest chưa
+                        local isAllQuestsDone = false
+                        local fn = _G.CheckAwakeClient
+                        if type(fn) == "function" then
+                            local ok, done6 = pcall(fn, LocalPlayer, "Kioru Quest 6")
+                            if ok and done6 == true then
+                                isAllQuestsDone = true
+                            end
+                        end
+
+                        -- Kiểm tra dialogue text nếu NPC đang mở (phát hiện chào mua 25M Beli)
+                        local pgui = LocalPlayer:FindFirstChild("PlayerGui")
+                        local qGui = pgui and pgui:FindFirstChild("QuestKioru")
+                        local dFrame = qGui and qGui:FindFirstChild("Dialogue")
+                        local tFrame = dFrame and dFrame:FindFirstChild("TextFrame")
+                        if tFrame then
+                            for _, txtObj in ipairs(tFrame:GetDescendants()) do
+                                if txtObj:IsA("TextLabel") and txtObj.Text and txtObj.Text ~= "" then
+                                    local lowerTxt = string.lower(txtObj.Text)
+                                    if string.find(lowerTxt, "25m") or string.find(lowerTxt, "done all") or string.find(lowerTxt, "buy") then
+                                        isAllQuestsDone = true
+                                        break
+                                    end
+                                end
+                            end
+                        end
+
+                        if isAllQuestsDone then
+                            -- ĐÃ XONG 6 QUEST -> MUA KIORU V1 VỚI GIÁ 25M BELI!
+                            local stats = LocalPlayer:FindFirstChild("PlayerStats")
+                            local beli = stats and stats:FindFirstChild("beli") and stats.beli.Value or 0
+                            if beli < 25000000 then
+                                warn(string.format("[HuDy Hub] ⚠️ Đã xong 6 Quest Kioru V1! Nhưng thiếu Beli: $%s / $25,000,000", tostring(beli)))
+                                if WindUI and WindUI.Notify then
+                                    WindUI:Notify({
+                                        Title = "Auto Kioru V1",
+                                        Content = string.format("Đã xong 6 Quest! Thiếu tiền mua Kioru V1: Hiện có $%s / Cần $25M", tostring(beli)),
+                                        Icon = "solar:danger-triangle-bold",
+                                        Duration = 4
+                                    })
+                                end
+                                task.wait(4)
+                            else
+                                print("[HuDy Hub] 💰 Đang tương tác NPC click Accept mua kiếm Kioru V1 ($25M Beli)...")
+                                HuDy.InteractWithKioruV1NPC(nil, true)
+                                task.wait(1.5)
+
+                                if HuDy.CheckHasKioruV1() then
+                                    print("[HuDy Hub] 🎉 ĐÃ MUA THÀNH CÔNG KIORU V1! Chuyển sang quy trình Kioru V2...")
+                                    if WindUI and WindUI.Notify then
+                                        WindUI:Notify({
+                                            Title = "Auto Kioru V1",
+                                            Content = "🎉 CHÚC MỪNG! Đã sở hữu Kioru V1! Bắt đầu săn Titles cho Kioru V2...",
+                                            Icon = "solar:check-circle-bold",
+                                            Duration = 5
+                                        })
+                                    end
+                                    task.wait(2)
+                                end
+                            end
+                        else
+                            -- CHƯA CÓ QUEST -> TƯƠNG TÁC NPC CLICK ACCEPT ĐỂ NHẬN NHIỆM VỤ TIẾP THEO
+                            print("[HuDy Hub] 📜 Đang tương tác NPC nhận nhiệm vụ Kioru tiếp theo...")
+                            HuDy.InteractWithKioruV1NPC(nil, false)
+                            task.wait(1.2)
+
+                            -- Sau khi nhận, kiểm tra ngay xem đã xuất hiện quest trên màn hình chưa
+                            local newIdx, newQData = HuDy.GetActiveKioruQuest()
+                            if newQData then
+                                print(string.format("[HuDy Hub] ✅ Nhận thành công nhiệm vụ %d/6: %s! Đang di chuyển tới quái...", newIdx, newQData.FullName))
+                                HuDy.TP(newQData.SpawnCF)
+                                task.wait(0.5)
+                            end
+                        end
+                    end
+                end
+
+            else
+                -- =====================================================================
+                -- NHÁNH A: ĐÃ CÓ KIORU V1 -> SĂN ĐỦ 4 TITLES QUA HOP SET SAIL -> MUA V2
+                -- =====================================================================
+                local titlesOk, titleCount, missing = HuDy.CheckKioruV2Titles()
+
+                if not titlesOk then
+                    -- Chưa đủ 4 danh hiệu: Cần qua Sea 3 săn Boss Set Sail
+                    local currentSea = HuDy.GetCurrentSea()
+                    if currentSea ~= 3 then
+                        print(string.format("[HuDy Hub] 📍 Đang ở Sea %d -> Chuyển qua Sea 3 để săn Boss Set Sail lấy Titles...", currentSea))
+                        if WindUI and WindUI.Notify then
+                            WindUI:Notify({
+                                Title = "Auto Kioru V2",
+                                Content = "Đã có Kioru V1! Đang qua Sea 3 săn Boss Set Sail lấy 4 Danh hiệu...",
+                                Icon = "solar:map-bold",
+                                Duration = 4
+                            })
+                        end
+                        HuDy.TeleportToSea("ThirdSea")
+                        task.wait(6)
+                        continue
+                    end
+
+                    -- Bật các cờ Hop Boss Set Sail tương ứng với danh hiệu còn thiếu
+                    local missingBossList = {}
+                    if not missing.TyrantSlayer then
+                        HuDy.Flags.AutoHopAbyssal = true
+                        table.insert(missingBossList, "Abyssal Tyrant")
+                    else
+                        HuDy.Flags.AutoHopAbyssal = false
+                    end
+
+                    if not missing.Krakenbane then
+                        HuDy.Flags.AutoHopChaosKraken = true
+                        table.insert(missingBossList, "Chaos Kraken")
+                    else
+                        HuDy.Flags.AutoHopChaosKraken = false
+                    end
+
+                    if not missing.Shellbreaker then
+                        HuDy.Flags.AutoHopDeepseaCrusher = true
+                        table.insert(missingBossList, "Deepsea Crusher")
+                    else
+                        HuDy.Flags.AutoHopDeepseaCrusher = false
+                    end
+
+                    if not missing.Dragonbane then
+                        HuDy.Flags.AutoHopDrakenfyr = true
+                        table.insert(missingBossList, "Drakenfyr")
+                    else
+                        HuDy.Flags.AutoHopDrakenfyr = false
+                    end
+
+                    HuDy.Flags.AutoHopSetSailSelect = true
+                    HuDy.Flags.SelectedSetSailBosses = missingBossList
+
+                    print(string.format("[HuDy Hub] ⚓ Đang tự động Hop Set Sail săn Boss: %s (%d/4 Titles)", table.concat(missingBossList, ", "), titleCount))
+
+                    -- Kích hoạt vòng lặp Farm / Hop Boss của HuDy Hub
+                    if not HuDy.FarmLoopRunning then
+                        HuDy.StartAutoFarm()
+                    end
+                    task.wait(2)
+
+                else
+                    -- ĐÃ ĐỦ CẢ 4 DANH HIỆU! (Tyrant Slayer, Krakenbane, Shellbreaker, Dragonbane)
+                    -- Tắt các cờ Hop Set Sail
+                    HuDy.Flags.AutoHopAbyssal = false
+                    HuDy.Flags.AutoHopChaosKraken = false
+                    HuDy.Flags.AutoHopDeepseaCrusher = false
+                    HuDy.Flags.AutoHopDrakenfyr = false
+                    HuDy.Flags.AutoHopSetSailSelect = false
+
+                    -- Kiểm tra đảm bảo đang ở Sea 3
+                    local currentSea = HuDy.GetCurrentSea()
+                    if currentSea ~= 3 then
+                        HuDy.TeleportToSea("ThirdSea")
+                        task.wait(6)
+                        continue
+                    end
+
+                    -- Kiểm tra Beli: cần $55,555,555
+                    local stats = LocalPlayer:FindFirstChild("PlayerStats")
+                    local beli = stats and stats:FindFirstChild("beli") and stats.beli.Value or 0
+                    if beli < 55555555 then
+                        warn(string.format("[HuDy Hub] ⚠️ Đã đủ 4 Titles nhưng thiếu Beli mua Kioru V2! Có: $%s / Cần: $55,555,555", tostring(beli)))
+                        if WindUI and WindUI.Notify then
+                            WindUI:Notify({
+                                Title = "Auto Kioru V2",
+                                Content = string.format("Đã đủ 4 Titles! Thiếu tiền mua V2: Có $%s / Cần $55.5M", tostring(beli)),
+                                Icon = "solar:danger-triangle-bold",
+                                Duration = 4
+                            })
+                        end
+                        task.wait(4)
+                    else
+                        -- ĐỦ TẤT CẢ ĐIỀU KIỆN -> BAY TỚI NPC KIORU V2 (-628, 187, 4022) VÀ MUA!
+                        local char = LocalPlayer.Character
+                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                        local distV2 = hrp and (hrp.Position - KIORU_V2_NPC_CFRAME.Position).Magnitude or 999
+
+                        if distV2 > 8 then
+                            HuDy.TP(KIORU_V2_NPC_CFRAME)
+                        else
+                            HuDy.StopTP()
+                            hrp.CFrame = KIORU_V2_NPC_CFRAME
+                            pcall(function()
+                                hrp.AssemblyLinearVelocity = Vector3.zero
+                                hrp.Velocity = Vector3.zero
+                            end)
+                            task.wait(1)
+
+                            print("[HuDy Hub] ⚡ Gửi Remote mua Kioru V2 ($55,555,555 Beli)...")
+                            local chest = ReplicatedStorage:FindFirstChild("Chest") or ReplicatedStorage:WaitForChild("Chest", 3)
+                            local remotes = chest and (chest:FindFirstChild("Remotes") or chest:WaitForChild("Remotes", 3))
+                            local funcs = remotes and (remotes:FindFirstChild("Functions") or remotes:WaitForChild("Functions", 3))
+                            local etcFunc = funcs and (funcs:FindFirstChild("EtcFunction") or funcs:WaitForChild("EtcFunction", 3))
+
+                            if etcFunc then
+                                local args1 = {
+                                    "Buy Kioru V2",
+                                    {
+                                        Price = 55555555,
+                                        TextSuccess = "<AnimateStyle=Rainbow>Successfully purchased a sword.",
+                                        TextNoMoney = "<AnimateStyle=Appear><Color=Red>Not enough Money $!"
+                                    }
+                                }
+                                pcall(function() etcFunc:InvokeServer(unpack(args1)) end)
+                                task.wait(2)
+
+                                -- Fallback nếu cần
+                                if not HuDy.CheckHasKioruV2() then
+                                    local args2 = { "AddQuestProgress", { QuestChapter = 1, QuestProgressName = "Kioru V2" } }
+                                    pcall(function() etcFunc:InvokeServer(unpack(args2)) end)
+                                    task.wait(2)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        HuDy.KioruV2Running = false
+        HuDy.StopTP()
+    end)
+end
+
+-- ==============================================================================
 -- 7. UI FRAMEWORK & NAVIGATION
 -- ==============================================================================
 HuDy.LoadConfig()
@@ -3919,7 +4886,29 @@ HuDy.LoadConfig()
 local WindUI
 do
 	local ok, result = pcall(function() return require("./src/Init") end)
-	if ok then WindUI = result else WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))() end
+	if ok then
+		WindUI = result
+	else
+		local cacheFile = "HuDy Hub/WindUI_cache.lua"
+		local source
+		if readfile and isfile and isfile(cacheFile) then
+			pcall(function() source = readfile(cacheFile) end)
+		end
+		if not source or #source < 500 then
+			local get_ok, res = pcall(function()
+				return game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+			end)
+			if get_ok and res and #res > 500 then
+				source = res
+				if writefile then pcall(function() writefile(cacheFile, source) end) end
+			end
+		end
+		if source then
+			WindUI = loadstring(source)()
+		else
+			WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+		end
+	end
 end
 
 local Window = WindUI:CreateWindow({
@@ -4336,6 +5325,11 @@ MainTab:Dropdown({
             table.insert(mats, val)
         end
         HuDy.Flags.SelectMaterialFarm = mats
+        if HuDy.UpdateSelectedMaterials then
+            HuDy.UpdateSelectedMaterials(mats)
+            HuDy.CurrentMaterialTargetMob = nil
+            HuDy.CurrentMaterialTargetRoot = nil
+        end
         HuDy.SaveConfig()
     end,
 })
@@ -4345,6 +5339,11 @@ MainTab:Toggle({
     Value = HuDy.Flags.AutoFarmMaterial,
     Callback = function(state)
         HuDy.Flags.AutoFarmMaterial = state
+        HuDy.CurrentMaterialTargetMob = nil
+        HuDy.CurrentMaterialTargetRoot = nil
+        if state and HuDy.UpdateSelectedMaterials then
+            HuDy.UpdateSelectedMaterials()
+        end
         HuDy.SaveConfig()
         if state then HuDy.StartAutoFarm() else HuDy.StopTP() end
     end,
@@ -4430,6 +5429,7 @@ local function MakeStatToggle(statName)
         Value = HuDy.Flags["AutoStats_"..statName],
         Callback = function(state)
             HuDy.Flags["AutoStats_"..statName] = state
+            HuDy.SaveConfig()
         end
     })
 end
@@ -4531,6 +5531,51 @@ FruitTab:Toggle({
 
 
 -- ==============================================================================
+-- [TAB: ITEM / SWORD]
+-- ==============================================================================
+local KioruSection = ItemTab:Section({ Title = "Kioru Sword (Sea 3)" })
+
+ItemTab:Toggle({
+    Title = "Auto Buy Kioru V2",
+    Desc = "Bắt buộc có Kioru V1 trong Inventory, $55,555,555 Beli và 4 Danh hiệu (TS, KB, SB, DB)",
+    Flag = "AutoKioruV2",
+    Value = HuDy.Flags.AutoKioruV2 or false,
+    Callback = function(state)
+        HuDy.Flags.AutoKioruV2 = state
+        HuDy.SaveConfig()
+        if state then
+            HuDy.StartAutoKioruV2()
+        else
+            HuDy.StopTP()
+        end
+    end
+})
+
+ItemTab:Button({
+    Title = "Kiểm Tra Điều Kiện Kioru V2",
+    Desc = "Xem số Beli, sở hữu Kioru V1/V2 và danh hiệu cần có",
+    Callback = function()
+        HuDy.CheckKioruV2StatusNotify()
+    end
+})
+
+ItemTab:Button({
+    Title = "Teleport tới NPC Kioru V2 (Sea 3)",
+    Desc = "Dịch chuyển tới tọa độ NPC (-628, 187, 4022)",
+    Callback = function()
+        HuDy.TP(CFrame.new(-628, 187, 4022))
+    end
+})
+
+ItemTab:Button({
+    Title = "Dừng Teleport (Stop TP)",
+    Callback = function()
+        HuDy.StopTP()
+    end
+})
+
+
+-- ==============================================================================
 -- [TAB: DUNGEON]
 -- ==============================================================================
 DungeonTab:Section({ Title = "Dungeon" })
@@ -4574,11 +5619,23 @@ DungeonTab:Toggle({
 })
 
 DungeonTab:Toggle({
+    Title = "Dungeon Mob Hopping Gather (Gom quái nhảy target)",
+    Desc = "Tự động nhảy target qua lại giữa các quái mỗi 0.35s để kích hoạt aggro, quái sẽ tự dồn về gom lại 1 cục",
+    Flag = "DungeonCenterGather",
+    Value = HuDy.Flags.DungeonCenterGather ~= false,
+    Callback = function(state)
+        HuDy.Flags.DungeonCenterGather = state
+        HuDy.SaveConfig()
+    end,
+})
+
+DungeonTab:Toggle({
     Title = "Log Dungeon Boss Effects (dump file)",
     Flag = "LogBossEffects",
     Value = HuDy.Flags.LogBossEffects or false,
     Callback = function(state)
         HuDy.Flags.LogBossEffects = state
+        HuDy.SaveConfig()
         if state then
             HuDy.StartBossEffectLogger()
         end
@@ -4687,6 +5744,7 @@ PlayerTab:Section({ Title = "Movement Enhancements" })
 
 PlayerTab:Toggle({
     Title = "Walk On Water",
+    Flag = "WalkOnWater",
     Value = HuDy.Flags.WalkOnWater or false,
     Callback = function(state)
         HuDy.Flags.WalkOnWater = state
@@ -4696,6 +5754,7 @@ PlayerTab:Toggle({
 
 PlayerTab:Toggle({
     Title = "Enable Walk Speed",
+    Flag = "EnableWalkSpeed",
     Value = HuDy.Flags.EnableWalkSpeed or false,
     Callback = function(state)
         HuDy.Flags.EnableWalkSpeed = state
@@ -4705,6 +5764,7 @@ PlayerTab:Toggle({
 
 PlayerTab:Slider({
     Title = "Walk Speed Value",
+    Flag = "WalkSpeed",
     Step = 1,
     Value = {
         Min = 16,
@@ -4719,6 +5779,7 @@ PlayerTab:Slider({
 
 PlayerTab:Toggle({
     Title = "Enable Jump Power",
+    Flag = "EnableJumpPower",
     Value = HuDy.Flags.EnableJumpPower or false,
     Callback = function(state)
         HuDy.Flags.EnableJumpPower = state
@@ -4728,6 +5789,7 @@ PlayerTab:Toggle({
 
 PlayerTab:Slider({
     Title = "Jump Power Value",
+    Flag = "JumpPower",
     Step = 1,
     Value = {
         Min = 50,
@@ -4862,7 +5924,7 @@ end
 local function IsSetSailHopActive()
     return (HuDy.Flags.AutoHopSerpent or HuDy.Flags.AutoHopPteradon or HuDy.Flags.AutoHopAbyssal 
         or HuDy.Flags.AutoHopChaosKraken or HuDy.Flags.AutoHopDrakenfyr or HuDy.Flags.AutoHopDeepseaCrusher
-        or HuDy.Flags.AutoHopAllSetSail)
+        or HuDy.Flags.AutoHopAllSetSail or HuDy.Flags.AutoHopSetSailSelect)
 end
 
 -- Vòng lặp Scan Radar API ngầm (Chỉ chạy và gửi dữ liệu lên API khi BẬT chức năng Hop Boss Set Sail)
@@ -5115,53 +6177,70 @@ local setSailBossMap = {
     ["Deepsea Crusher"]= "AutoHopDeepseaCrusher",
 }
 
-local function applySetSailSelection(selectedList)
-    -- Nếu chọn None hoặc list rỗng → tắt hết
-    local hasNone = false
-    for _, name in ipairs(type(selectedList) == "table" and selectedList or {}) do
-        if name == "None" then hasNone = true; break end
+local function syncSetSailFlags()
+    for _, flag in pairs(setSailBossMap) do
+        HuDy.Flags[flag] = false
     end
-    -- Reset all first
-    for _, flag in pairs(setSailBossMap) do HuDy.Flags[flag] = false end
-    -- Enable selected (bỏ qua None)
-    if not hasNone then
-        for _, name in ipairs(type(selectedList) == "table" and selectedList or {}) do
-            local flag = setSailBossMap[name]
-            if flag then HuDy.Flags[flag] = true end
+    
+    local isFarmActive = HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail
+    if isFarmActive then
+        local list = HuDy.Flags.SelectedSetSailBosses
+        if type(list) == "table" then
+            local hasNone = false
+            for _, name in ipairs(list) do
+                if name == "None" then hasNone = true; break end
+            end
+            if not hasNone then
+                for _, name in ipairs(list) do
+                    local flag = setSailBossMap[name]
+                    if flag then HuDy.Flags[flag] = true end
+                end
+            end
+        elseif type(list) == "string" and setSailBossMap[list] then
+            HuDy.Flags[setSailBossMap[list]] = true
         end
     end
     HuDy.SaveConfig()
-    HuDy.StartAutoFarm()
 end
 
 HopBossTab:Dropdown({
-    Title = "Select Set Sail Boss(es)",
+    Title = "Select Mob",
     Flag = "SelectedSetSailBosses",
     Values = {"None", "Abyssal Tyrant", "Chaos Kraken", "Drakenfyr", "Deepsea Crusher"},
     Value = (function()
+        if type(HuDy.Flags.SelectedSetSailBosses) == "table" and #HuDy.Flags.SelectedSetSailBosses > 0 then
+            return HuDy.Flags.SelectedSetSailBosses
+        end
         local v = {}
         if HuDy.Flags.AutoHopAbyssal then table.insert(v, "Abyssal Tyrant") end
         if HuDy.Flags.AutoHopChaosKraken then table.insert(v, "Chaos Kraken") end
         if HuDy.Flags.AutoHopDrakenfyr then table.insert(v, "Drakenfyr") end
         if HuDy.Flags.AutoHopDeepseaCrusher then table.insert(v, "Deepsea Crusher") end
-        return v
+        return #v > 0 and v or {"None"}
     end)(),
     Multi = true,
     Callback = function(val)
-        applySetSailSelection(val)
+        HuDy.Flags.SelectedSetSailBosses = val
+        syncSetSailFlags()
+        local isFarmActive = HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail
+        if isFarmActive then
+            HuDy.StartAutoFarm()
+        end
     end,
 })
 
 HopBossTab:Toggle({
-    Title = "Farm All Set Sail",
-    Flag = "AutoHopAllSetSail",
-    Value = false,
+    Title = "Farm Set Sail Select",
+    Flag = "AutoHopSetSailSelect",
+    Value = HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail or false,
     Callback = function(state)
-        local allNames = {"Abyssal Tyrant", "Chaos Kraken", "Drakenfyr", "Deepsea Crusher"}
+        HuDy.Flags.AutoHopSetSailSelect = state
+        HuDy.Flags.AutoHopAllSetSail = state
+        syncSetSailFlags()
         if state then
-            applySetSailSelection(allNames)
+            HuDy.StartAutoFarm()
         else
-            applySetSailSelection({})
+            HuDy.StopTP()
         end
     end,
 })
@@ -5658,11 +6737,20 @@ end)
 -- =========================================================================
 ServerLiveTab:Section({ Title = "Live Server Hop" })
 
-local LiveTarget = "hd"
+local LiveTarget = HuDy.Flags.LiveTarget or "hd"
 ServerLiveTab:Dropdown({
     Title = "Chọn Boss/Event",
+    Flag = "LiveTarget",
     Values = {"SeaKing (sk)", "Hydra (hd)", "Ghost Ship (gs)", "Sea Serpent (serpent)", "Set Sail (df_inferno/ds_crusher/abyssal/chaos_kraken)"},
-    Value = "Hydra (hd)",
+    Value = (function()
+        if LiveTarget == "sk" then return "SeaKing (sk)"
+        elseif LiveTarget == "hd" then return "Hydra (hd)"
+        elseif LiveTarget == "gs" then return "Ghost Ship (gs)"
+        elseif LiveTarget == "serpent" then return "Sea Serpent (serpent)"
+        elseif LiveTarget == "df_inferno" then return "Set Sail (df_inferno/ds_crusher/abyssal/chaos_kraken)"
+        end
+        return "Hydra (hd)"
+    end)(),
     Callback = function(val)
         if string.find(val, "sk") then LiveTarget = "sk"
         elseif string.find(val, "hd") then LiveTarget = "hd"
@@ -5670,14 +6758,17 @@ ServerLiveTab:Dropdown({
         elseif string.find(val, "serpent") then LiveTarget = "serpent"
         elseif string.find(val, "df_inferno") then LiveTarget = "df_inferno"
         end
+        HuDy.Flags.LiveTarget = LiveTarget
+        HuDy.SaveConfig()
     end
 })
 
 local FetchedServerMap = {}
 local FetchedServersDropdown = ServerLiveTab:Dropdown({
     Title = "Danh sách Server (Ấn nút Fetch bên dưới để tải)",
+    Flag = "SelectedLiveServer",
     Values = {"(Chưa tải dữ liệu)"},
-    Value = "(Chưa tải dữ liệu)",
+    Value = HuDy.Flags.SelectedLiveServer or "(Chưa tải dữ liệu)",
     Callback = function(val)
         HuDy.Flags.SelectedLiveServer = val
         HuDy.SaveConfig()
@@ -5771,7 +6862,7 @@ ServerLiveTab:Button({
 -- [TAB: MISC & CONFIG]
 local ConfigManager = Window.ConfigManager
 local currentConfigName = ""
-local autoLoadFilePath = "WindUI/" .. tostring(Window.Folder) .. "/HuDy_AutoLoad.json"
+local autoLoadFilePath = "WindUI/" .. tostring(Window.Folder or "HuDy Hub") .. "/HuDy_AutoLoad.json"
 local initAutoLoadState = false
 local initAutoLoadTarget = nil
 
@@ -5786,16 +6877,343 @@ pcall(function()
     end
 end)
 
+HuDy.AutoLoadEnabled = initAutoLoadState
+HuDy.AutoLoadTarget = initAutoLoadTarget
 local autoLoadTarget = initAutoLoadTarget 
 
 local function SaveAutoLoadFile(state, cfgName)
+    HuDy.AutoLoadEnabled = state
+    HuDy.AutoLoadTarget = cfgName or ""
     pcall(function()
+        local folder = "WindUI/" .. tostring(Window.Folder or "HuDy Hub")
+        if not isfolder("WindUI") then makefolder("WindUI") end
+        if not isfolder(folder) then makefolder(folder) end
         local data = {
             AutoLoadEnabled = state,
             TargetConfig = cfgName or ""
         }
         writefile(autoLoadFilePath, HttpService:JSONEncode(data))
     end)
+end
+
+local function GetAllConfigNames()
+    local list = {}
+    pcall(function()
+        if ConfigManager and ConfigManager.AllConfigs then
+            local cfgs = ConfigManager:AllConfigs()
+            if cfgs and #cfgs > 0 then
+                list = cfgs
+            end
+        end
+    end)
+    if #list == 0 and listfiles then
+        pcall(function()
+            local folder = "WindUI/" .. tostring(Window.Folder or "HuDy Hub") .. "/config"
+            if isfolder(folder) then
+                for _, file in ipairs(listfiles(folder)) do
+                    local name = file:match("([^\\/]+)%.json$")
+                    if name then
+                        table.insert(list, name)
+                    end
+                end
+            end
+        end)
+    end
+    return list
+end
+
+function HuDy.ApplyFlagsToUI()
+    local allElements = {}
+    if Window and Window.PendingFlags then
+        for f, el in pairs(Window.PendingFlags) do
+            allElements[f] = el
+        end
+    end
+    if Window and Window.CurrentConfig and Window.CurrentConfig.Elements then
+        for f, el in pairs(Window.CurrentConfig.Elements) do
+            allElements[f] = el
+        end
+    end
+
+    for flag, elem in pairs(allElements) do
+        local val = nil
+        if flag == "AutoFarmLevel" then
+            val = HuDy.Flags.AutoFarm
+        elseif flag == "SelectedWeaponsDropdown" then
+            val = HuDy.Flags.SelectedWeaponsList
+        elseif flag == "SelectedSkillsDropdown" then
+            val = HuDy.Flags.SelectedSkillsList
+        elseif flag == "AutoHopSetSailSelect" then
+            val = HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail
+        elseif flag == "FarmDistance" then
+            val = tonumber(HuDy.Flags.FarmDistance) or 8
+        elseif flag == "WalkSpeed" then
+            val = tonumber(HuDy.Flags.WalkSpeed) or 30
+        elseif flag == "JumpPower" then
+            val = tonumber(HuDy.Flags.JumpPower) or 30
+        elseif flag == "DungeonRaceHealth" then
+            val = tonumber(HuDy.Flags.DungeonRaceHealth) or 50
+        else
+            val = HuDy.Flags[flag]
+        end
+
+        if val ~= nil and elem then
+            pcall(function()
+                if elem.Select then
+                    elem:Select(val)
+                elseif elem.Set then
+                    if type(val) == "table" and val.Default ~= nil then
+                        elem:Set(tonumber(val.Default) or 0)
+                    elseif type(val) == "table" and val.value ~= nil then
+                        elem:Set(val.value)
+                    else
+                        elem:Set(val)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+function HuDy.SaveNamedConfig(name, silent)
+    if not name or name == "" then return false end
+    
+    local configDir = "WindUI/" .. tostring(Window.Folder or "HuDy Hub") .. "/config"
+    pcall(function()
+        if not isfolder("WindUI") then makefolder("WindUI") end
+        if not isfolder("WindUI/" .. tostring(Window.Folder or "HuDy Hub")) then makefolder("WindUI/" .. tostring(Window.Folder or "HuDy Hub")) end
+        if not isfolder(configDir) then makefolder(configDir) end
+    end)
+    
+    -- 1. Thu thập dữ liệu tất cả UI elements
+    local allElements = {}
+    if Window and Window.PendingFlags then
+        for f, el in pairs(Window.PendingFlags) do allElements[f] = el end
+    end
+    if Window and Window.CurrentConfig and Window.CurrentConfig.Elements then
+        for f, el in pairs(Window.CurrentConfig.Elements) do allElements[f] = el end
+    end
+    
+    local elementsData = {}
+    for flag, elem in pairs(allElements) do
+        if elem and elem.__type then
+            local elemVal = nil
+            if elem.__type == "Toggle" or elem.__type == "Input" or elem.__type == "Keybind" then
+                elemVal = elem.Value
+            elseif elem.__type == "Slider" then
+                if type(elem.Value) == "table" and elem.Value.Default ~= nil then
+                    elemVal = tonumber(elem.Value.Default)
+                else
+                    elemVal = tonumber(elem.Value)
+                end
+            elseif elem.__type == "Dropdown" then
+                elemVal = elem.Value
+            end
+            elementsData[tostring(flag)] = {
+                __type = elem.__type,
+                value = elemVal
+            }
+        end
+    end
+    
+    -- 2. Đăng ký vào WindUI ConfigManager nếu có
+    pcall(function()
+        if ConfigManager and ConfigManager.CreateConfig then
+            local cfg = ConfigManager:GetConfig(name)
+            if not cfg then cfg = ConfigManager:CreateConfig(name) end
+            Window.CurrentConfig = cfg
+            if cfg.Set then
+                cfg:Set("HuDyFlags", HuDy.Flags)
+                cfg:Set("SavedAt", os.time())
+            end
+        end
+    end)
+    
+    -- 3. Tạo cấu trúc snapshot chuẩn tương thích WindUI và HuDy Hub
+    local fullData = {
+        __version = 1.2,
+        __elements = elementsData,
+        __autoload = false,
+        __custom = {
+            HuDyFlags = HuDy.Flags,
+            SavedAt = os.time()
+        },
+        HuDyFlags = HuDy.Flags,
+        Elements = elementsData,
+        SavedAt = os.time()
+    }
+    
+    pcall(function()
+        writefile(configDir .. "/" .. name .. ".json", HttpService:JSONEncode(fullData))
+    end)
+    
+    -- 4. Nếu AutoSaveSettings đang bật, đồng bộ luôn vào file KingLegacy_Config.json
+    if HuDy.Flags.AutoSaveSettings then
+        pcall(function()
+            if not isfolder("HuDy Hub") then makefolder("HuDy Hub") end
+            writefile(HuDy.SaveFileName, HttpService:JSONEncode(HuDy.Flags))
+        end)
+    end
+
+    if not silent and WindUI and WindUI.Notify then
+        WindUI:Notify({ Title = "HuDy Settings", Content = "Đã lưu config thành công: " .. name, Icon = "solar:check-square-bold", Duration = 3 })
+    end
+    return true
+end
+
+function HuDy.LoadNamedConfig(name, silent)
+    if not name or name == "" then return false end
+    local configDir = "WindUI/" .. tostring(Window.Folder or "HuDy Hub") .. "/config"
+    local filePath = configDir .. "/" .. name .. ".json"
+    
+    if not isfile(filePath) then
+        if not silent and WindUI and WindUI.Notify then
+            WindUI:Notify({ Title = "Config Error", Content = "Không tìm thấy config: " .. name, Icon = "solar:danger-triangle-bold", Duration = 3 })
+        end
+        return false
+    end
+    
+    local loadedData = nil
+    pcall(function()
+        loadedData = HttpService:JSONDecode(readfile(filePath))
+    end)
+    if not loadedData or type(loadedData) ~= "table" then
+        if not silent and WindUI and WindUI.Notify then
+            WindUI:Notify({ Title = "Config Error", Content = "Lỗi đọc nội dung file config: " .. name, Icon = "solar:danger-triangle-bold", Duration = 3 })
+        end
+        return false
+    end
+    
+    -- 1. Phục hồi dữ liệu vào HuDy.Flags
+    local flagsToLoad = (loadedData.__custom and loadedData.__custom.HuDyFlags) or loadedData.HuDyFlags or loadedData
+    if type(flagsToLoad) == "table" then
+        for k, v in pairs(flagsToLoad) do
+            if k ~= "__elements" and k ~= "__custom" and k ~= "__version" and k ~= "__autoload" and k ~= "Elements" and k ~= "SavedAt" then
+                local val = v
+                if type(v) == "table" and v.value ~= nil and v.__type ~= nil then
+                    val = v.value
+                end
+                HuDy.Flags[k] = val
+            end
+        end
+    end
+    
+    -- 2. Phục hồi bổ sung từ __elements / Elements
+    local elemMap = loadedData.__elements or loadedData.Elements
+    if type(elemMap) == "table" then
+        for f, v in pairs(elemMap) do
+            local actualVal = nil
+            if type(v) == "table" then
+                if v.value ~= nil then
+                    actualVal = v.value
+                elseif v.Value ~= nil then
+                    actualVal = v.Value
+                elseif v.Default ~= nil then
+                    actualVal = tonumber(v.Default)
+                else
+                    actualVal = v
+                end
+            else
+                actualVal = v
+            end
+            
+            if f == "AutoFarmLevel" then
+                HuDy.Flags.AutoFarm = actualVal
+            elseif f == "SelectedWeaponsDropdown" then
+                HuDy.Flags.SelectedWeaponsList = actualVal
+            elseif f == "SelectedSkillsDropdown" then
+                HuDy.Flags.SelectedSkillsList = actualVal
+            elseif f == "AutoHopSetSailSelect" then
+                HuDy.Flags.AutoHopSetSailSelect = actualVal
+                HuDy.Flags.AutoHopAllSetSail = actualVal
+            elseif f == "FarmDistance" then
+                HuDy.Flags.FarmDistance = tonumber(actualVal) or 8
+            elseif f == "WalkSpeed" then
+                HuDy.Flags.WalkSpeed = tonumber(actualVal) or 30
+            elseif f == "JumpPower" then
+                HuDy.Flags.JumpPower = tonumber(actualVal) or 30
+            elseif f == "DungeonRaceHealth" then
+                HuDy.Flags.DungeonRaceHealth = tonumber(actualVal) or 50
+            else
+                if HuDy.Flags[f] == nil or (type(HuDy.Flags[f]) == "table" and HuDy.Flags[f].__type ~= nil) then
+                    HuDy.Flags[f] = actualVal
+                end
+            end
+        end
+    end
+    
+    -- Đồng bộ lại các biến phụ thuộc từ flags
+    if type(HuDy.Flags.SelectedWeaponsList) == "table" then
+        HuDy.Flags.SelectedWeapons = HuDy.Flags.SelectedWeaponsList
+        HuDy.Flags.SelectedWeaponsString = table.concat(HuDy.Flags.SelectedWeaponsList, ", ")
+    end
+    if type(HuDy.Flags.SelectedSkillsList) == "table" then
+        HuDy.Flags.SelectedSkills = {}
+        for _, sk in ipairs(HuDy.Flags.SelectedSkillsList) do
+            HuDy.Flags.SelectedSkills[sk] = true
+        end
+    end
+    if HuDy.UpdateSelectedMaterials then
+        HuDy.UpdateSelectedMaterials()
+        HuDy.CurrentMaterialTargetMob = nil
+        HuDy.CurrentMaterialTargetRoot = nil
+    end
+    pcall(function()
+        if syncSetSailFlags then syncSetSailFlags() end
+    end)
+    
+    -- 3. Nạp qua WindUI ConfigManager
+    pcall(function()
+        if ConfigManager and ConfigManager.CreateConfig then
+            local activeCfg = ConfigManager:CreateConfig(name)
+            Window.CurrentConfig = activeCfg
+            if activeCfg.Load then
+                activeCfg:Load()
+            end
+        end
+    end)
+    
+    -- 4. Đồng bộ trực quan lên toàn bộ UI
+    task.defer(function()
+        HuDy.ApplyFlagsToUI()
+        
+        if HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3 or HuDy.Flags.AutoFarmMaterial or HuDy.Flags.AutoFarmBoss or HuDy.Flags.AutoHopSerpent or HuDy.Flags.AutoHopPteradon or HuDy.Flags.AutoHopAbyssal or HuDy.Flags.AutoHopChaosKraken or HuDy.Flags.AutoHopDrakenfyr or HuDy.Flags.AutoHopDeepseaCrusher or HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail then
+            HuDy.StartAutoFarm()
+        end
+    end)
+    
+    -- 5. Nếu AutoSave bật, đồng bộ cả vào file KingLegacy_Config.json
+    if HuDy.Flags.AutoSaveSettings then
+        pcall(function()
+            if not isfolder("HuDy Hub") then makefolder("HuDy Hub") end
+            writefile(HuDy.SaveFileName, HttpService:JSONEncode(HuDy.Flags))
+        end)
+    end
+    
+    if not silent and WindUI and WindUI.Notify then
+        WindUI:Notify({ Title = "HuDy Settings", Content = "Đã nạp config thành công: " .. name, Icon = "solar:check-square-bold", Duration = 3 })
+    end
+    return true
+end
+
+function HuDy.DeleteNamedConfig(name)
+    if not name or name == "" then return false end
+    pcall(function()
+        if ConfigManager and ConfigManager.DeleteConfig then
+            ConfigManager:DeleteConfig(name)
+        end
+    end)
+    local configDir = "WindUI/" .. tostring(Window.Folder or "HuDy Hub") .. "/config"
+    local filePath = configDir .. "/" .. name .. ".json"
+    pcall(function()
+        if delfile and isfile(filePath) then
+            delfile(filePath)
+        end
+    end)
+    if WindUI and WindUI.Notify then
+        WindUI:Notify({ Title = "HuDy Settings", Content = "Đã xoá config: " .. name, Icon = "solar:trash-bin-trash-bold", Duration = 3 })
+    end
+    return true
 end
 
 local ConfigManagerSection = MiscTab:Section({ Title = "Config Manager" })
@@ -5808,7 +7226,12 @@ ConfigManagerSection:Toggle({
     Value = HuDy.Flags.AutoSaveSettings or false,
     Callback = function(state)
         HuDy.Flags.AutoSaveSettings = state
-        if state then HuDy.SaveConfig() end
+        if state then
+            HuDy.SaveConfig()
+            if HuDy.AutoLoadEnabled and HuDy.AutoLoadTarget and HuDy.AutoLoadTarget ~= "" then
+                HuDy.SaveNamedConfig(HuDy.AutoLoadTarget, true)
+            end
+        end
     end
 })
 ConfigManagerSection:Space()
@@ -5828,7 +7251,7 @@ local ConfigDropdown
 local AutoLoadDropdown
 local AutoLoadToggle
 
-local AllConfigs = ConfigManager:AllConfigs()
+local AllConfigs = GetAllConfigNames()
 ConfigDropdown = ConfigManagerSection:Dropdown({
     Title = "Saved Configs",
     Desc = "Select an existing config from your folder.",
@@ -5836,7 +7259,7 @@ ConfigDropdown = ConfigManagerSection:Dropdown({
     Value = nil,
     Callback = function(value)
         local name = type(value) == "table" and value[1] or value
-        if name then
+        if name and name ~= "" then
             currentConfigName = name
             ConfigNameInput:Set(name) 
         end
@@ -5850,20 +7273,14 @@ ConfigManagerSection:Button({
     Icon = "save",
     Callback = function()
         if currentConfigName == "" or currentConfigName == nil then
-            WindUI:Notify({ Title = "Config Error", Content = "Please enter a valid config name!", Icon = "solar:danger-triangle-bold", Duration = 3 })
+            WindUI:Notify({ Title = "Config Error", Content = "Vui lòng nhập tên config!", Icon = "solar:danger-triangle-bold", Duration = 3 })
             return
         end
         
-        local cfg = ConfigManager:GetConfig(currentConfigName)
-        if not cfg then cfg = ConfigManager:Config(currentConfigName) end
-        Window.CurrentConfig = cfg
-        
-        if Window.CurrentConfig:Save() then
-            WindUI:Notify({ Title = "HuDy Settings", Content = "Successfully saved config: " .. currentConfigName, Icon = "solar:check-square-bold", Duration = 3 })
-        end
-        
-        ConfigDropdown:Refresh(ConfigManager:AllConfigs())
-        if AutoLoadDropdown then AutoLoadDropdown:Refresh(ConfigManager:AllConfigs()) end
+        HuDy.SaveNamedConfig(currentConfigName)
+        local updated = GetAllConfigNames()
+        if ConfigDropdown and ConfigDropdown.Refresh then ConfigDropdown:Refresh(updated) end
+        if AutoLoadDropdown and AutoLoadDropdown.Refresh then AutoLoadDropdown:Refresh(updated) end
     end,
 })
 ConfigManagerSection:Space()
@@ -5873,12 +7290,12 @@ ConfigManagerSection:Button({
     Desc = "Loads the selected config file.",
     Icon = "download",
     Callback = function()
-        if currentConfigName == "" or currentConfigName == nil then return end
-        
-        Window.CurrentConfig = ConfigManager:CreateConfig(currentConfigName)
-        if Window.CurrentConfig:Load() then
-            WindUI:Notify({ Title = "HuDy Settings", Content = "Successfully loaded config: " .. currentConfigName, Icon = "solar:check-square-bold", Duration = 3 })
+        if currentConfigName == "" or currentConfigName == nil then
+            WindUI:Notify({ Title = "Config Error", Content = "Vui lòng chọn hoặc nhập tên config!", Icon = "solar:danger-triangle-bold", Duration = 3 })
+            return
         end
+        
+        HuDy.LoadNamedConfig(currentConfigName)
     end,
 })
 ConfigManagerSection:Space()
@@ -5890,22 +7307,19 @@ ConfigManagerSection:Button({
     Callback = function()
         if currentConfigName == "" or currentConfigName == nil then return end
         
-        local success, msg = ConfigManager:DeleteConfig(currentConfigName)
-        if success then
-            WindUI:Notify({ Title = "HuDy Settings", Content = "Deleted config: " .. currentConfigName, Icon = "solar:trash-bin-trash-bold", Duration = 3 })
-            ConfigNameInput:Set("")
-            currentConfigName = ""
-            
-            ConfigDropdown:Refresh(ConfigManager:AllConfigs())
-            if AutoLoadDropdown then AutoLoadDropdown:Refresh(ConfigManager:AllConfigs()) end
-            
-            if autoLoadTarget == currentConfigName then
-                autoLoadTarget = nil
-                if AutoLoadToggle then AutoLoadToggle:Set(false) end
-                SaveAutoLoadFile(false, "")
-            end
-        else
-            WindUI:Notify({ Title = "Config Error", Content = "Failed to delete: " .. msg, Icon = "solar:danger-triangle-bold", Duration = 3 })
+        HuDy.DeleteNamedConfig(currentConfigName)
+        ConfigNameInput:Set("")
+        currentConfigName = ""
+        
+        local updated = GetAllConfigNames()
+        if ConfigDropdown and ConfigDropdown.Refresh then ConfigDropdown:Refresh(updated) end
+        if AutoLoadDropdown and AutoLoadDropdown.Refresh then AutoLoadDropdown:Refresh(updated) end
+        
+        if autoLoadTarget == currentConfigName then
+            autoLoadTarget = nil
+            HuDy.AutoLoadTarget = nil
+            if AutoLoadToggle then AutoLoadToggle:Set(false) end
+            SaveAutoLoadFile(false, "")
         end
     end
 })
@@ -5917,14 +7331,18 @@ AutoLoadSection:Space()
 AutoLoadDropdown = AutoLoadSection:Dropdown({
     Title = "Select Config for Auto Load",
     Desc = "Choose which config you want to automatically load.",
-    Values = ConfigManager:AllConfigs(),
+    Values = GetAllConfigNames(),
     Value = initAutoLoadTarget, 
     Callback = function(value)
         local name = type(value) == "table" and value[1] or value
         autoLoadTarget = name
+        HuDy.AutoLoadTarget = name
         
         if AutoLoadToggle and AutoLoadToggle.Value == true then
             SaveAutoLoadFile(true, autoLoadTarget)
+            if HuDy.Flags.AutoSaveSettings then
+                HuDy.SaveNamedConfig(autoLoadTarget, true)
+            end
         end
     end,
 })
@@ -5936,43 +7354,42 @@ AutoLoadToggle = AutoLoadSection:Toggle({
     Flag = "HuDy_AutoLoadToggle",
     Value = initAutoLoadState, 
     Callback = function(state)
+        HuDy.AutoLoadEnabled = state
         if state then
             if autoLoadTarget and autoLoadTarget ~= "" then
                 SaveAutoLoadFile(true, autoLoadTarget)
-                WindUI:Notify({ Title = "Auto Load Enabled", Content = autoLoadTarget .. " will automatically load next time.", Icon = "solar:bell-bold", Duration = 3 })
+                if HuDy.Flags.AutoSaveSettings then
+                    HuDy.SaveNamedConfig(autoLoadTarget, true)
+                end
+                WindUI:Notify({ Title = "Auto Load Enabled", Content = autoLoadTarget .. " sẽ tự động tải khi khởi động.", Icon = "solar:bell-bold", Duration = 3 })
             else
-                WindUI:Notify({ Title = "HuDy Error", Content = "Please select a config from the dropdown first!", Icon = "solar:danger-triangle-bold", Duration = 3 })
-                task.spawn(function() AutoLoadToggle:Set(false) end)
+                WindUI:Notify({ Title = "HuDy Error", Content = "Vui lòng chọn config từ danh sách trước!", Icon = "solar:danger-triangle-bold", Duration = 3 })
+                task.spawn(function()
+                    if AutoLoadToggle and AutoLoadToggle.Set then
+                        AutoLoadToggle:Set(false)
+                    end
+                end)
                 SaveAutoLoadFile(false, "")
             end
         else
-            SaveAutoLoadFile(false, autoLoadTarget)
-            WindUI:Notify({ Title = "Auto Load Disabled", Content = "Auto load has been turned off.", Icon = "solar:bell-bold", Duration = 3 })
+            SaveAutoLoadFile(false, autoLoadTarget or "")
+            WindUI:Notify({ Title = "Auto Load Disabled", Content = "Đã tắt tự động tải config.", Icon = "solar:bell-bold", Duration = 3 })
         end
     end,
 })
 
--- Load auto config sau khi init xong UI
+-- Khởi động Auto Load hoặc áp dụng cấu hình đã lưu
 task.spawn(function()
-    task.wait(1) 
+    task.wait(0.5)
     pcall(function()
-        if initAutoLoadState and initAutoLoadTarget then
-            local path = "WindUI/" .. tostring(Window.Folder) .. "/config/" .. initAutoLoadTarget .. ".json"
-            
-            if isfile(path) then
-                local activeCfg = ConfigManager:CreateConfig(initAutoLoadTarget)
-                activeCfg:Load()
-                
-                WindUI:Notify({
-                    Title = "HuDy System",
-                    Content = "Auto-loaded config: " .. initAutoLoadTarget,
-                    Icon = "solar:check-square-bold",
-                    Duration = 3,
-                })
-            else
-                warn("HuDy: Auto Load failed (Config missing: " .. initAutoLoadTarget .. ")")
-                SaveAutoLoadFile(false, "")
-                AutoLoadToggle:Set(false)
+        if initAutoLoadState and initAutoLoadTarget and initAutoLoadTarget ~= "" then
+            print("[HuDy Hub] Auto Load is enabled. Loading config: " .. tostring(initAutoLoadTarget))
+            HuDy.LoadNamedConfig(initAutoLoadTarget, true)
+        else
+            -- Phục hồi giá trị từ HuDy.Flags (đã load từ KingLegacy_Config.json) lên các element trên UI
+            HuDy.ApplyFlagsToUI()
+            if HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3 or HuDy.Flags.AutoFarmMaterial or HuDy.Flags.AutoFarmBoss or HuDy.Flags.AutoHopSerpent or HuDy.Flags.AutoHopPteradon or HuDy.Flags.AutoHopAbyssal or HuDy.Flags.AutoHopChaosKraken or HuDy.Flags.AutoHopDrakenfyr or HuDy.Flags.AutoHopDeepseaCrusher or HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail then
+                HuDy.StartAutoFarm()
             end
         end
     end)
@@ -6009,6 +7426,7 @@ SettingsSection:Toggle({
 SettingsSection:Toggle({
     Title = "Auto Rejoin on Disconnect",
     Desc = "Automatically reconnect when kicked or disconnected.",
+    Flag = "AutoRejoin",
     Value = HuDy.Flags.AutoRejoin,
     Callback = function(state)
         HuDy.Flags.AutoRejoin = state
@@ -6487,7 +7905,7 @@ task.spawn(function()
 end)
 
 -- Khởi động Farm tự động nếu cấu hình tải lên có bật
-if HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3 or HuDy.Flags.AutoFarmMaterial or HuDy.Flags.AutoFarmBoss or HuDy.Flags.AutoHopSerpent or HuDy.Flags.AutoHopPteradon or HuDy.Flags.AutoHopAbyssal or HuDy.Flags.AutoHopChaosKraken or HuDy.Flags.AutoHopDrakenfyr or HuDy.Flags.AutoHopDeepseaCrusher then
+if HuDy.Flags.AutoFarm or HuDy.Flags.AutoFarmSelectedMob or HuDy.Flags.AutoNextSea2 or HuDy.Flags.AutoNextSea3 or HuDy.Flags.AutoFarmMaterial or HuDy.Flags.AutoFarmBoss or HuDy.Flags.AutoHopSerpent or HuDy.Flags.AutoHopPteradon or HuDy.Flags.AutoHopAbyssal or HuDy.Flags.AutoHopChaosKraken or HuDy.Flags.AutoHopDrakenfyr or HuDy.Flags.AutoHopDeepseaCrusher or HuDy.Flags.AutoHopSetSailSelect or HuDy.Flags.AutoHopAllSetSail then
     HuDy.StartAutoFarm()
 end
 
