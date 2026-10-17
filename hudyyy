@@ -1,1 +1,2 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/NTTTTTTTT/upload/refs/heads/main/content/253f4d04764940a3b341204003313ccc_obf.lua",true))(()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/NTTTTTTTT/upload/refs/heads/main/content/253f4d04764940a3b341204003313ccc_obf.lua", true))(...)
+
