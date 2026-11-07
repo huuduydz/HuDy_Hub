@@ -1,4 +1,37 @@
+--[[
+    =============================================================================
+    HUDY HUB - STANDALONE CUSTOM UI LIBRARY (HuDyUI.lua)
+    Thiết kế độc quyền: Không dùng Icon | Dễ thao tác (PC & Mobile) | 8 Chủ đề
+    Hỗ trợ sẵn:
+      - Khởi động thu nhỏ (StartMinimized) + Nút Mở/Đóng Menu bên góc phải
+      - Thanh UI Trạng Thái Tiến Trình Farm (Progress Status Bar) trên đỉnh màn hình
+      - Hệ thống 8 Chủ Đề (Cyber Neon, Hacker Matrix, Tet Holiday, Christmas,
+        Halloween, Blood Moon, Ocean Abyss, Royal Gold) đổi màu trực tiếp
+      - Các Component: Tab, Section, Paragraph/InfoCard, Toggle, Slider (+/-),
+        MultiChips (Chọn nhanh 1 chạm), Dropdown, Button, Input, Notify
+    =============================================================================
+    CÁCH DÙNG TRONG CÁC SCRIPT KHÁC KHI ĐƯA LÊN GITHUB:
 
+    local HuDyUI = loadstring(game:HttpGet("LINK_RAW_GITHUB_CUA_BAN/HuDyUI.lua"))()
+
+    local Window = HuDyUI:CreateWindow({
+        Title = "HUDY HUB — KAITUN FULL LEVEL",
+        Subtitle = "King Legacy Automation",
+        Theme = "Cyber Neon",
+        StartMinimized = true,
+        ConfigFile = "HuDy Hub/UI_Theme.json",
+        ProgressBar = {
+            Enabled = true,
+            Title = "HUDY HUB | KAITUN PROGRESS",
+            Badge = "SEA 1",
+            QuickToggleState = true,
+            OnQuickToggle = function(state)
+                _G.AutoFarm = state
+            end
+        }
+    })
+    =============================================================================
+--]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
@@ -16,151 +49,149 @@ HuDyUI.__index = HuDyUI
 HuDyUI.Themes = {
     ["Onyx Dark"] = {
         Name = "Onyx Dark",
-        Subtitle = "Tối Giản Than Chì & Xanh Slate Dịu Mắt (Mặc Định)",
-        MainBg = Color3.fromRGB(16, 17, 21),
-        SidebarBg = Color3.fromRGB(20, 22, 27),
-        CardBg = Color3.fromRGB(25, 27, 34),
-        CardSubBg = Color3.fromRGB(19, 20, 25),
-        Accent = Color3.fromRGB(99, 102, 241),
+        Subtitle = "Tối Giản Than Chì - Xanh Indigo Rõ Nét (Mặc Định)",
+        MainBg = Color3.fromRGB(18, 20, 26),
+        SidebarBg = Color3.fromRGB(24, 27, 36),
+        CardBg = Color3.fromRGB(32, 36, 48),
+        CardSubBg = Color3.fromRGB(25, 28, 38),
+        Accent = Color3.fromRGB(99, 140, 255),
         AccentSecondary = Color3.fromRGB(52, 211, 153),
-        Border = Color3.fromRGB(38, 41, 52),
-        TextPrimary = Color3.fromRGB(241, 245, 249),
-        TextMuted = Color3.fromRGB(148, 163, 184),
-        HexAccent = "#6366f1",
+        Border = Color3.fromRGB(58, 66, 88),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(185, 195, 215),
+        HexAccent = "#638cff",
         HexSecondary = "#34d399",
-        HexMuted = "#94a3b8",
+        HexMuted = "#b9c3d7",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Graphite Silver"] = {
         Name = "Graphite Silver",
-        Subtitle = "Đen Than Bạc Mờ - Sang Trọng & Êm Mắt",
-        MainBg = Color3.fromRGB(17, 18, 22),
-        SidebarBg = Color3.fromRGB(22, 23, 28),
-        CardBg = Color3.fromRGB(27, 29, 36),
-        CardSubBg = Color3.fromRGB(20, 21, 26),
-        Accent = Color3.fromRGB(203, 213, 225),
-        AccentSecondary = Color3.fromRGB(148, 163, 184),
-        Border = Color3.fromRGB(45, 48, 60),
-        TextPrimary = Color3.fromRGB(248, 250, 252),
-        TextMuted = Color3.fromRGB(156, 163, 175),
-        HexAccent = "#cbd5e1",
-        HexSecondary = "#94a3b8",
-        HexMuted = "#9ca3af",
+        Subtitle = "Đen Than Bạc Mờ - Sang Trọng và Rõ Nét",
+        MainBg = Color3.fromRGB(20, 21, 26),
+        SidebarBg = Color3.fromRGB(26, 28, 35),
+        CardBg = Color3.fromRGB(36, 39, 48),
+        CardSubBg = Color3.fromRGB(27, 29, 37),
+        Accent = Color3.fromRGB(226, 232, 240),
+        AccentSecondary = Color3.fromRGB(160, 175, 195),
+        Border = Color3.fromRGB(68, 74, 90),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(190, 200, 215),
+        HexAccent = "#e2e8f0",
+        HexSecondary = "#a0afc3",
+        HexMuted = "#bec8d7",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Sage Forest"] = {
         Name = "Sage Forest",
-        Subtitle = "Xanh Rêu Thảo Mộc - Dịu Mắt Chống Mỏi",
-        MainBg = Color3.fromRGB(15, 18, 16),
-        SidebarBg = Color3.fromRGB(19, 23, 20),
-        CardBg = Color3.fromRGB(24, 30, 26),
-        CardSubBg = Color3.fromRGB(18, 22, 19),
+        Subtitle = "Xanh Rêu Thảo Mộc - Tươi Sáng Dịu Mắt",
+        MainBg = Color3.fromRGB(16, 22, 19),
+        SidebarBg = Color3.fromRGB(22, 30, 26),
+        CardBg = Color3.fromRGB(30, 42, 35),
+        CardSubBg = Color3.fromRGB(22, 32, 26),
         Accent = Color3.fromRGB(52, 211, 153),
         AccentSecondary = Color3.fromRGB(16, 185, 129),
-        Border = Color3.fromRGB(34, 46, 38),
-        TextPrimary = Color3.fromRGB(240, 253, 244),
-        TextMuted = Color3.fromRGB(140, 168, 155),
+        Border = Color3.fromRGB(52, 74, 62),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(185, 210, 195),
         HexAccent = "#34d399",
         HexSecondary = "#10b981",
-        HexMuted = "#8ca89b",
+        HexMuted = "#b9d2c3",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Nordic Sky"] = {
         Name = "Nordic Sky",
-        Subtitle = "Xanh Băng Bắc Âu - Thanh Mát & Tinh Tế",
-        MainBg = Color3.fromRGB(15, 18, 23),
-        SidebarBg = Color3.fromRGB(19, 23, 30),
-        CardBg = Color3.fromRGB(24, 29, 39),
-        CardSubBg = Color3.fromRGB(18, 21, 28),
+        Subtitle = "Xanh Băng Bắc Âu - Thanh Mát và Nổi Bật",
+        MainBg = Color3.fromRGB(16, 22, 30),
+        SidebarBg = Color3.fromRGB(22, 31, 44),
+        CardBg = Color3.fromRGB(30, 42, 58),
+        CardSubBg = Color3.fromRGB(22, 32, 45),
         Accent = Color3.fromRGB(56, 189, 248),
         AccentSecondary = Color3.fromRGB(96, 165, 250),
-        Border = Color3.fromRGB(36, 45, 60),
-        TextPrimary = Color3.fromRGB(240, 249, 255),
-        TextMuted = Color3.fromRGB(148, 163, 184),
+        Border = Color3.fromRGB(54, 76, 104),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(190, 210, 230),
         HexAccent = "#38bdf8",
         HexSecondary = "#60a5fa",
-        HexMuted = "#94a3b8",
+        HexMuted = "#bed2e6",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Muted Amber"] = {
         Name = "Muted Amber",
-        Subtitle = "Hổ Phách Trầm - Tông Nâu Ấm Dịu Dàng",
-        MainBg = Color3.fromRGB(19, 17, 15),
-        SidebarBg = Color3.fromRGB(24, 21, 18),
-        CardBg = Color3.fromRGB(31, 27, 23),
-        CardSubBg = Color3.fromRGB(22, 19, 16),
-        Accent = Color3.fromRGB(245, 158, 11),
-        AccentSecondary = Color3.fromRGB(217, 119, 6),
-        Border = Color3.fromRGB(48, 41, 33),
-        TextPrimary = Color3.fromRGB(254, 249, 195),
-        TextMuted = Color3.fromRGB(180, 165, 145),
-        HexAccent = "#f59e0b",
-        HexSecondary = "#d97706",
-        HexMuted = "#b4a591",
+        Subtitle = "Hổ Phách Trầm - Tông Nâu Vàng Nổi Bật",
+        MainBg = Color3.fromRGB(24, 20, 16),
+        SidebarBg = Color3.fromRGB(32, 27, 21),
+        CardBg = Color3.fromRGB(44, 36, 28),
+        CardSubBg = Color3.fromRGB(33, 27, 21),
+        Accent = Color3.fromRGB(251, 191, 36),
+        AccentSecondary = Color3.fromRGB(245, 158, 11),
+        Border = Color3.fromRGB(78, 64, 48),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(225, 205, 185),
+        HexAccent = "#fbbf24",
+        HexSecondary = "#f59e0b",
+        HexMuted = "#e1cdb9",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Dusk Rose"] = {
         Name = "Dusk Rose",
-        Subtitle = "Hồng Hoàng Hôn - Trầm Ấm Không Chói",
-        MainBg = Color3.fromRGB(19, 15, 17),
-        SidebarBg = Color3.fromRGB(25, 19, 22),
-        CardBg = Color3.fromRGB(32, 24, 28),
-        CardSubBg = Color3.fromRGB(22, 17, 20),
-        Accent = Color3.fromRGB(244, 63, 94),
-        AccentSecondary = Color3.fromRGB(225, 29, 72),
-        Border = Color3.fromRGB(50, 36, 42),
-        TextPrimary = Color3.fromRGB(255, 241, 242),
-        TextMuted = Color3.fromRGB(185, 155, 165),
-        HexAccent = "#f43f5e",
-        HexSecondary = "#e11d48",
-        HexMuted = "#b99ba5",
+        Subtitle = "Hồng Hoàng Hôn - Ấm Áp Rực Rỡ",
+        MainBg = Color3.fromRGB(24, 18, 22),
+        SidebarBg = Color3.fromRGB(32, 24, 30),
+        CardBg = Color3.fromRGB(44, 32, 40),
+        CardSubBg = Color3.fromRGB(33, 24, 30),
+        Accent = Color3.fromRGB(251, 113, 133),
+        AccentSecondary = Color3.fromRGB(244, 63, 94),
+        Border = Color3.fromRGB(78, 54, 70),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(225, 195, 210),
+        HexAccent = "#fb7185",
+        HexSecondary = "#f43f5e",
+        HexMuted = "#e1c3d2",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Deep Ocean"] = {
         Name = "Deep Ocean",
-        Subtitle = "Hải Quân Biển Sâu - Lắng Đọng & Sâu Thẳm",
-        MainBg = Color3.fromRGB(13, 17, 24),
-        SidebarBg = Color3.fromRGB(17, 22, 31),
-        CardBg = Color3.fromRGB(22, 29, 41),
-        CardSubBg = Color3.fromRGB(15, 20, 28),
-        Accent = Color3.fromRGB(14, 165, 233),
-        AccentSecondary = Color3.fromRGB(6, 182, 212),
-        Border = Color3.fromRGB(30, 44, 62),
-        TextPrimary = Color3.fromRGB(240, 249, 255),
-        TextMuted = Color3.fromRGB(140, 170, 195),
-        HexAccent = "#0ea5e9",
-        HexSecondary = "#06b6d4",
-        HexMuted = "#8caac3",
+        Subtitle = "Đại Dương Sâu - Xanh Biển Sáng và Tinh Tế",
+        MainBg = Color3.fromRGB(15, 20, 32),
+        SidebarBg = Color3.fromRGB(21, 28, 46),
+        CardBg = Color3.fromRGB(29, 39, 62),
+        CardSubBg = Color3.fromRGB(21, 29, 47),
+        Accent = Color3.fromRGB(96, 165, 250),
+        AccentSecondary = Color3.fromRGB(59, 130, 246),
+        Border = Color3.fromRGB(54, 74, 114),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(190, 210, 240),
+        HexAccent = "#60a5fa",
+        HexSecondary = "#3b82f6",
+        HexMuted = "#bed2f0",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
     ["Soft Lavender"] = {
         Name = "Soft Lavender",
-        Subtitle = "Tím Thạch Anh Dịu - Tinh Tế & Nhẹ Nhàng",
-        MainBg = Color3.fromRGB(17, 15, 22),
-        SidebarBg = Color3.fromRGB(22, 19, 28),
-        CardBg = Color3.fromRGB(29, 25, 37),
-        CardSubBg = Color3.fromRGB(20, 17, 26),
-        Accent = Color3.fromRGB(167, 139, 250),
-        AccentSecondary = Color3.fromRGB(139, 92, 246),
-        Border = Color3.fromRGB(46, 38, 58),
-        TextPrimary = Color3.fromRGB(250, 245, 255),
-        TextMuted = Color3.fromRGB(175, 160, 195),
-        HexAccent = "#a78bfa",
-        HexSecondary = "#8b5cf6",
-        HexMuted = "#afa0c3",
+        Subtitle = "Hoa Oải Hương - Tím Pastel Dịu Dàng Sáng Đẹp",
+        MainBg = Color3.fromRGB(22, 19, 28),
+        SidebarBg = Color3.fromRGB(29, 25, 38),
+        CardBg = Color3.fromRGB(40, 34, 52),
+        CardSubBg = Color3.fromRGB(30, 25, 39),
+        Accent = Color3.fromRGB(192, 132, 252),
+        AccentSecondary = Color3.fromRGB(168, 85, 247),
+        Border = Color3.fromRGB(72, 60, 94),
+        TextPrimary = Color3.fromRGB(255, 255, 255),
+        TextMuted = Color3.fromRGB(215, 200, 230),
+        HexAccent = "#c084fc",
+        HexSecondary = "#a855f7",
+        HexMuted = "#d7c8e6",
         FontTitle = Enum.Font.GothamBold,
         FontBody = Enum.Font.GothamMedium,
     },
 }
-
--- Ánh xạ tương thích ngược các tên theme cũ
 HuDyUI.ThemeAliases = {
     ["Onyx Modern"] = "Onyx Dark",
     ["Cyber Neon"] = "Nordic Sky",
@@ -402,17 +433,17 @@ function HuDyUI:CreateWindow(config)
     local rightMenuBtn = Instance.new("TextButton")
     rightMenuBtn.Name = "HuDyMenuToggleButton"
     rightMenuBtn.AnchorPoint = config.MenuButtonAnchor or Vector2.new(0, 0)
-    rightMenuBtn.Size = UDim2.new(0, 104, 0, 30)
+    rightMenuBtn.Size = UDim2.new(0, 118, 0, 34)
     rightMenuBtn.Position = config.MenuButtonPosition or UDim2.new(0, 16, 0, 56)
     rightMenuBtn.BorderSizePixel = 0
     rightMenuBtn.AutoButtonColor = false
     rightMenuBtn.Text = config.OpenButtonText or "HuDy Menu"
-    rightMenuBtn.TextSize = 10
+    rightMenuBtn.TextSize = 12
     rightMenuBtn.Visible = not isMenuOpen
     rightMenuBtn.Parent = screenGui
 
     local rightMenuCorner = Instance.new("UICorner")
-    rightMenuCorner.CornerRadius = UDim.new(0, 15)
+    rightMenuCorner.CornerRadius = UDim.new(0, 17)
     rightMenuCorner.Parent = rightMenuBtn
 
     local rightMenuGradient = Instance.new("UIGradient")
@@ -426,8 +457,8 @@ function HuDyUI:CreateWindow(config)
     rightMenuStroke.Parent = rightMenuBtn
 
     local rightMenuDot = Instance.new("Frame")
-    rightMenuDot.Size = UDim2.new(0, 6, 0, 6)
-    rightMenuDot.Position = UDim2.new(0, 10, 0.5, -3)
+    rightMenuDot.Size = UDim2.new(0, 8, 0, 8)
+    rightMenuDot.Position = UDim2.new(0, 11, 0.5, -4)
     rightMenuDot.BorderSizePixel = 0
     rightMenuDot.Parent = rightMenuBtn
 
@@ -537,7 +568,7 @@ function HuDyUI:CreateWindow(config)
     barTitleLabel.Size = UDim2.new(0, 220, 1, 0)
     barTitleLabel.BackgroundTransparency = 1
     barTitleLabel.Text = progressCfg.Title or "HUDY HUB | KAITUN PROGRESS"
-    barTitleLabel.TextSize = 10
+    barTitleLabel.TextSize = 12
     barTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     barTitleLabel.Parent = barHeader
 
@@ -546,7 +577,7 @@ function HuDyUI:CreateWindow(config)
     barThemeBadge.Position = UDim2.new(1, -244, 0, 1)
     barThemeBadge.BorderSizePixel = 0
     barThemeBadge.Text = currentThemeName
-    barThemeBadge.TextSize = 8
+    barThemeBadge.TextSize = 10
     barThemeBadge.Parent = barHeader
 
     local barThemeCorner = Instance.new("UICorner")
@@ -565,7 +596,7 @@ function HuDyUI:CreateWindow(config)
     seaBadge.Size = UDim2.new(0, 50, 0, 18)
     seaBadge.Position = UDim2.new(1, -154, 0, 1)
     seaBadge.Text = progressCfg.Badge or "SEA 1"
-    seaBadge.TextSize = 9
+    seaBadge.TextSize = 11
     seaBadge.Parent = barHeader
 
     local seaBadgeCorner = Instance.new("UICorner")
@@ -582,7 +613,7 @@ function HuDyUI:CreateWindow(config)
     quickFarmBtn.Position = UDim2.new(1, -98, 0, 1)
     quickFarmBtn.Text = quickToggleState and "BẬT" or "TẮT"
     quickFarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    quickFarmBtn.TextSize = 9
+    quickFarmBtn.TextSize = 11
     quickFarmBtn.Parent = barHeader
 
     local quickFarmCorner = Instance.new("UICorner")
@@ -612,7 +643,7 @@ function HuDyUI:CreateWindow(config)
     collapseBarBtn.Size = UDim2.new(0, 44, 0, 18)
     collapseBarBtn.Position = UDim2.new(1, -44, 0, 1)
     collapseBarBtn.Text = "GỌN"
-    collapseBarBtn.TextSize = 8
+    collapseBarBtn.TextSize = 10
     collapseBarBtn.Parent = barHeader
 
     local collapseBarCorner = Instance.new("UICorner")
@@ -642,7 +673,7 @@ function HuDyUI:CreateWindow(config)
     stageProgressLabel.Position = UDim2.new(0, 8, 0, 2)
     stageProgressLabel.BackgroundTransparency = 1
     stageProgressLabel.Text = "GIAI ĐOẠN: Đang đồng bộ..."
-    stageProgressLabel.TextSize = 9
+    stageProgressLabel.TextSize = 11
     stageProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
     stageProgressLabel.Parent = progressContainer
 
@@ -651,7 +682,7 @@ function HuDyUI:CreateWindow(config)
     totalProgressLabel.Position = UDim2.new(0.58, 0, 0, 2)
     totalProgressLabel.BackgroundTransparency = 1
     totalProgressLabel.Text = "TỔNG: --"
-    totalProgressLabel.TextSize = 9
+    totalProgressLabel.TextSize = 11
     totalProgressLabel.TextXAlignment = Enum.TextXAlignment.Right
     totalProgressLabel.Parent = progressContainer
 
@@ -703,7 +734,7 @@ function HuDyUI:CreateWindow(config)
     barDetailText.Size = UDim2.new(1, 0, 0, 0)
     barDetailText.AutomaticSize = Enum.AutomaticSize.Y
     barDetailText.BackgroundTransparency = 1
-    barDetailText.TextSize = 10
+    barDetailText.TextSize = 12
     barDetailText.TextXAlignment = Enum.TextXAlignment.Left
     barDetailText.TextYAlignment = Enum.TextYAlignment.Top
     barDetailText.TextWrapped = true
@@ -724,7 +755,7 @@ function HuDyUI:CreateWindow(config)
     mainWindowFrame = Instance.new("Frame")
     mainWindowFrame.Name = "MainCustomWindow"
     mainWindowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainWindowFrame.Size = config.Size or UDim2.new(0, 620, 0, 360)
+    mainWindowFrame.Size = config.Size or UDim2.new(0, 650, 0, 385)
     mainWindowFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     mainWindowFrame.BackgroundTransparency = 0.02
     mainWindowFrame.BorderSizePixel = 0
@@ -745,7 +776,7 @@ function HuDyUI:CreateWindow(config)
     mainStroke.Parent = mainWindowFrame
 
     local windowTopbar = Instance.new("Frame")
-    windowTopbar.Size = UDim2.new(1, 0, 0, 38)
+    windowTopbar.Size = UDim2.new(1, 0, 0, 44)
     windowTopbar.BorderSizePixel = 0
     windowTopbar.Active = true
     windowTopbar.Parent = mainWindowFrame
@@ -763,20 +794,20 @@ function HuDyUI:CreateWindow(config)
     MakeDraggable(windowTopbar, mainWindowFrame)
 
     local windowTitleLabel = Instance.new("TextLabel")
-    windowTitleLabel.Size = UDim2.new(0, 240, 0, 18)
+    windowTitleLabel.Size = UDim2.new(0, 280, 0, 20)
     windowTitleLabel.Position = UDim2.new(0, 14, 0, 4)
     windowTitleLabel.BackgroundTransparency = 1
     windowTitleLabel.Text = windowTitle
-    windowTitleLabel.TextSize = 12
+    windowTitleLabel.TextSize = 14
     windowTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     windowTitleLabel.Parent = windowTopbar
 
     local windowSubtitleLabel = Instance.new("TextLabel")
-    windowSubtitleLabel.Size = UDim2.new(0, 260, 0, 14)
-    windowSubtitleLabel.Position = UDim2.new(0, 14, 0, 21)
+    windowSubtitleLabel.Size = UDim2.new(0, 280, 0, 16)
+    windowSubtitleLabel.Position = UDim2.new(0, 14, 0, 24)
     windowSubtitleLabel.BackgroundTransparency = 1
     windowSubtitleLabel.Text = windowSubtitle
-    windowSubtitleLabel.TextSize = 9
+    windowSubtitleLabel.TextSize = 11
     windowSubtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     windowSubtitleLabel.Parent = windowTopbar
 
@@ -794,11 +825,11 @@ function HuDyUI:CreateWindow(config)
     tagsLayout.Parent = windowTagsHolder
 
     local topThemeCycleBtn = Instance.new("TextButton")
-    topThemeCycleBtn.Size = UDim2.new(0, 84, 0, 24)
-    topThemeCycleBtn.Position = UDim2.new(1, -164, 0.5, -12)
+    topThemeCycleBtn.Size = UDim2.new(0, 92, 0, 28)
+    topThemeCycleBtn.Position = UDim2.new(1, -180, 0.5, -14)
     topThemeCycleBtn.BorderSizePixel = 0
     topThemeCycleBtn.Text = "Đổi Theme"
-    topThemeCycleBtn.TextSize = 10
+    topThemeCycleBtn.TextSize = 11
     topThemeCycleBtn.Parent = windowTopbar
 
     local topThemeCorner = Instance.new("UICorner")
@@ -815,11 +846,11 @@ function HuDyUI:CreateWindow(config)
     end)
 
     local topCloseBtn = Instance.new("TextButton")
-    topCloseBtn.Size = UDim2.new(0, 72, 0, 24)
-    topCloseBtn.Position = UDim2.new(1, -76, 0.5, -12)
+    topCloseBtn.Size = UDim2.new(0, 80, 0, 28)
+    topCloseBtn.Position = UDim2.new(1, -84, 0.5, -14)
     topCloseBtn.BorderSizePixel = 0
     topCloseBtn.Text = "Thu Nhỏ"
-    topCloseBtn.TextSize = 10
+    topCloseBtn.TextSize = 11
     topCloseBtn.Parent = windowTopbar
 
     local topCloseCorner = Instance.new("UICorner")
@@ -835,8 +866,8 @@ function HuDyUI:CreateWindow(config)
     end)
 
     local sidebarFrame = Instance.new("ScrollingFrame")
-    sidebarFrame.Size = UDim2.new(0, 150, 1, -44)
-    sidebarFrame.Position = UDim2.new(0, 6, 0, 40)
+    sidebarFrame.Size = UDim2.new(0, 165, 1, -50)
+    sidebarFrame.Position = UDim2.new(0, 6, 0, 46)
     sidebarFrame.BorderSizePixel = 0
     sidebarFrame.ScrollBarThickness = 2
     sidebarFrame.ScrollBarImageTransparency = 0.5
@@ -866,8 +897,8 @@ function HuDyUI:CreateWindow(config)
     sidebarLayout.Parent = sidebarFrame
 
     local contentHolder = Instance.new("Frame")
-    contentHolder.Size = UDim2.new(1, -164, 1, -44)
-    contentHolder.Position = UDim2.new(0, 158, 0, 40)
+    contentHolder.Size = UDim2.new(1, -179, 1, -50)
+    contentHolder.Position = UDim2.new(0, 173, 0, 46)
     contentHolder.BackgroundTransparency = 1
     contentHolder.BorderSizePixel = 0
     contentHolder.Parent = mainWindowFrame
@@ -899,7 +930,7 @@ function HuDyUI:CreateWindow(config)
             local isSelected = (id == tabId)
             info.Page.Visible = isSelected
             info.Button.BackgroundColor3 = isSelected and activeTheme.CardBg or activeTheme.CardSubBg
-            info.Button.TextColor3 = isSelected and activeTheme.Accent or activeTheme.TextMuted
+            info.Button.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(195, 205, 220)
             info.Stroke.Color = isSelected and activeTheme.Accent or activeTheme.Border
             info.Indicator.BackgroundColor3 = isSelected and activeTheme.Accent or activeTheme.Border
             info.Indicator.Visible = isSelected
@@ -1031,7 +1062,7 @@ function HuDyUI:CreateWindow(config)
         tLbl.Text = tagText
         tLbl.TextColor3 = tagCfg.Color or activeTheme.TextMuted
         tLbl.Font = activeTheme.FontBody
-        tLbl.TextSize = 8
+        tLbl.TextSize = 11
         tLbl.Parent = tagPill
 
         OnThemeChanged(function(theme)
@@ -1115,7 +1146,7 @@ function HuDyUI:CreateWindow(config)
         tLbl.BackgroundTransparency = 1
         tLbl.Font = activeTheme.FontTitle
         tLbl.TextColor3 = activeTheme.Accent
-        tLbl.TextSize = 10
+        tLbl.TextSize = 13
         tLbl.TextXAlignment = Enum.TextXAlignment.Left
         tLbl.Text = nTitle
         tLbl.LayoutOrder = 1
@@ -1127,7 +1158,7 @@ function HuDyUI:CreateWindow(config)
         cLbl.BackgroundTransparency = 1
         cLbl.Font = activeTheme.FontBody
         cLbl.TextColor3 = activeTheme.TextPrimary
-        cLbl.TextSize = 10
+        cLbl.TextSize = 12
         cLbl.TextXAlignment = Enum.TextXAlignment.Left
         cLbl.TextWrapped = true
         cLbl.Text = nContent
@@ -1155,11 +1186,11 @@ function HuDyUI:CreateWindow(config)
         local tabId = "Tab_" .. tostring(tabCount)
 
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 30)
+        btn.Size = UDim2.new(1, 0, 0, 34)
         btn.BorderSizePixel = 0
         btn.LayoutOrder = tabCount
         btn.Text = "   " .. HuDyUI.StripIcons(tabTitle)
-        btn.TextSize = 10
+        btn.TextSize = 12
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.Parent = sidebarFrame
 
@@ -1220,7 +1251,7 @@ function HuDyUI:CreateWindow(config)
             local isSelected = (currentTabId == tabId)
             btn.Font = theme.FontBody
             btn.BackgroundColor3 = isSelected and theme.CardBg or theme.CardSubBg
-            btn.TextColor3 = isSelected and theme.Accent or theme.TextMuted
+            btn.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(195, 205, 220)
             btnStroke.Color = isSelected and theme.Accent or theme.Border
             indicator.BackgroundColor3 = isSelected and theme.Accent or theme.Border
             page.ScrollBarImageColor3 = theme.Accent
@@ -1237,11 +1268,11 @@ function HuDyUI:CreateWindow(config)
             elementOrder = elementOrder + 1
             local secTitle = type(secCfg) == "table" and (secCfg.Title or "") or tostring(secCfg or "")
             local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(1, 0, 0, 22)
+            lbl.Size = UDim2.new(1, 0, 0, 26)
             lbl.BackgroundTransparency = 1
             lbl.LayoutOrder = elementOrder
             lbl.Text = string.upper(HuDyUI.StripIcons(secTitle))
-            lbl.TextSize = 10
+            lbl.TextSize = 12
             lbl.TextXAlignment = Enum.TextXAlignment.Left
             lbl.Parent = page
 
@@ -1335,11 +1366,11 @@ function HuDyUI:CreateWindow(config)
             list.Parent = card
 
             local titleLbl = Instance.new("TextLabel")
-            titleLbl.Size = UDim2.new(1, 0, 0, 16)
+            titleLbl.Size = UDim2.new(1, 0, 0, 20)
             titleLbl.BackgroundTransparency = 1
             titleLbl.LayoutOrder = 1
             titleLbl.Text = HuDyUI.StripIcons(pCfg.Title or "Thông Tin")
-            titleLbl.TextSize = 11
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = card
 
@@ -1349,7 +1380,7 @@ function HuDyUI:CreateWindow(config)
             bodyLbl.BackgroundTransparency = 1
             bodyLbl.LayoutOrder = 2
             bodyLbl.Text = pCfg.Desc or ""
-            bodyLbl.TextSize = 10
+            bodyLbl.TextSize = 12
             bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
             bodyLbl.TextYAlignment = Enum.TextYAlignment.Top
             bodyLbl.TextWrapped = true
@@ -1387,7 +1418,7 @@ function HuDyUI:CreateWindow(config)
             local callback = tCfg.Callback
 
             local card = Instance.new("TextButton")
-            card.Size = UDim2.new(1, 0, 0, desc and 48 or 38)
+            card.Size = UDim2.new(1, 0, 0, desc and 52 or 42)
             card.BorderSizePixel = 0
             card.AutoButtonColor = false
             card.Text = ""
@@ -1403,22 +1434,22 @@ function HuDyUI:CreateWindow(config)
             stroke.Parent = card
 
             local titleLbl = Instance.new("TextLabel")
-            titleLbl.Size = UDim2.new(1, -66, 0, 18)
-            titleLbl.Position = UDim2.new(0, 12, 0, desc and 6 or 10)
+            titleLbl.Size = UDim2.new(1, -72, 0, 20)
+            titleLbl.Position = UDim2.new(0, 12, 0, desc and 6 or 11)
             titleLbl.BackgroundTransparency = 1
             titleLbl.Text = title
-            titleLbl.TextSize = 11
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = card
 
             local descLbl = nil
             if desc and desc ~= "" then
                 descLbl = Instance.new("TextLabel")
-                descLbl.Size = UDim2.new(1, -66, 0, 16)
-                descLbl.Position = UDim2.new(0, 12, 0, 25)
+                descLbl.Size = UDim2.new(1, -72, 0, 16)
+                descLbl.Position = UDim2.new(0, 12, 0, 28)
                 descLbl.BackgroundTransparency = 1
                 descLbl.Text = desc
-                descLbl.TextSize = 9
+                descLbl.TextSize = 11
                 descLbl.TextXAlignment = Enum.TextXAlignment.Left
                 descLbl.TextTruncate = Enum.TextTruncate.AtEnd
                 descLbl.Parent = card
@@ -1426,8 +1457,8 @@ function HuDyUI:CreateWindow(config)
 
             -- Nút gạt chuyển trạng thái hiện đại (Onyx V2 Switch Pill - 0 Icon)
             local switchTrack = Instance.new("Frame")
-            switchTrack.Size = UDim2.new(0, 42, 0, 22)
-            switchTrack.Position = UDim2.new(1, -54, 0.5, -11)
+            switchTrack.Size = UDim2.new(0, 44, 0, 24)
+            switchTrack.Position = UDim2.new(1, -56, 0.5, -12)
             switchTrack.BorderSizePixel = 0
             switchTrack.Parent = card
 
@@ -1440,8 +1471,8 @@ function HuDyUI:CreateWindow(config)
             switchStroke.Parent = switchTrack
 
             local switchKnob = Instance.new("Frame")
-            switchKnob.Size = UDim2.new(0, 16, 0, 16)
-            switchKnob.Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            switchKnob.Size = UDim2.new(0, 18, 0, 18)
+            switchKnob.Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
             switchKnob.BorderSizePixel = 0
             switchKnob.Parent = switchTrack
 
@@ -1452,7 +1483,7 @@ function HuDyUI:CreateWindow(config)
             local function UpdateSwitchVisual(animate)
                 local targetTrackColor = state and activeTheme.Accent or activeTheme.CardSubBg
                 local targetStrokeColor = state and activeTheme.Accent or activeTheme.Border
-                local targetKnobPos = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+                local targetKnobPos = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
                 local targetKnobColor = state and (activeTheme.MainBg or Color3.fromRGB(20, 20, 24)) or Color3.fromRGB(180, 180, 195)
 
                 if animate then
@@ -1476,7 +1507,7 @@ function HuDyUI:CreateWindow(config)
                 card.BackgroundColor3 = activeTheme.CardBg
                 stroke.Color = state and activeTheme.Accent or activeTheme.Border
                 titleLbl.Font = activeTheme.FontBody
-                titleLbl.TextColor3 = state and activeTheme.TextPrimary or activeTheme.TextMuted
+                titleLbl.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(225, 230, 242)
                 if descLbl then
                     descLbl.Font = activeTheme.FontBody
                     descLbl.TextColor3 = activeTheme.TextMuted
@@ -1534,7 +1565,7 @@ function HuDyUI:CreateWindow(config)
             local currentVal = math.clamp(defaultVal, minVal, maxVal)
 
             local card = Instance.new("Frame")
-            card.Size = UDim2.new(1, 0, 0, 54)
+            card.Size = UDim2.new(1, 0, 0, 58)
             card.BorderSizePixel = 0
             card.LayoutOrder = elementOrder
             card.Parent = page
@@ -1552,25 +1583,25 @@ function HuDyUI:CreateWindow(config)
             titleLbl.Position = UDim2.new(0, 12, 0, 6)
             titleLbl.BackgroundTransparency = 1
             titleLbl.Text = HuDyUI.StripIcons(sCfg.Title or "Slider")
-            titleLbl.TextSize = 11
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = card
 
             local valLbl = Instance.new("TextLabel")
-            valLbl.Size = UDim2.new(0, 70, 0, 18)
-            valLbl.Position = UDim2.new(1, -142, 0, 6)
+            valLbl.Size = UDim2.new(0, 80, 0, 18)
+            valLbl.Position = UDim2.new(1, -156, 0, 6)
             valLbl.BackgroundTransparency = 1
             valLbl.Text = tostring(currentVal) .. suffix
-            valLbl.TextSize = 11
+            valLbl.TextSize = 12
             valLbl.TextXAlignment = Enum.TextXAlignment.Right
             valLbl.Parent = card
 
             local minusBtn = Instance.new("TextButton")
-            minusBtn.Size = UDim2.new(0, 26, 0, 20)
-            minusBtn.Position = UDim2.new(1, -64, 0, 5)
+            minusBtn.Size = UDim2.new(0, 28, 0, 24)
+            minusBtn.Position = UDim2.new(1, -68, 0, 4)
             minusBtn.BorderSizePixel = 0
             minusBtn.Text = "-"
-            minusBtn.TextSize = 13
+            minusBtn.TextSize = 14
             minusBtn.Parent = card
 
             local minusCorner = Instance.new("UICorner")
@@ -1578,11 +1609,11 @@ function HuDyUI:CreateWindow(config)
             minusCorner.Parent = minusBtn
 
             local plusBtn = Instance.new("TextButton")
-            plusBtn.Size = UDim2.new(0, 26, 0, 20)
-            plusBtn.Position = UDim2.new(1, -34, 0, 5)
+            plusBtn.Size = UDim2.new(0, 28, 0, 24)
+            plusBtn.Position = UDim2.new(1, -36, 0, 4)
             plusBtn.BorderSizePixel = 0
             plusBtn.Text = "+"
-            plusBtn.TextSize = 13
+            plusBtn.TextSize = 14
             plusBtn.Parent = card
 
             local plusCorner = Instance.new("UICorner")
@@ -1590,8 +1621,8 @@ function HuDyUI:CreateWindow(config)
             plusCorner.Parent = plusBtn
 
             local track = Instance.new("Frame")
-            track.Size = UDim2.new(1, -24, 0, 6)
-            track.Position = UDim2.new(0, 12, 0, 36)
+            track.Size = UDim2.new(1, -24, 0, 8)
+            track.Position = UDim2.new(0, 12, 0, 38)
             track.BorderSizePixel = 0
             track.Active = true
             track.Parent = card
@@ -1612,7 +1643,7 @@ function HuDyUI:CreateWindow(config)
 
             -- Onyx style circular thumb knob
             local thumbKnob = Instance.new("Frame")
-            thumbKnob.Size = UDim2.new(0, 12, 0, 12)
+            thumbKnob.Size = UDim2.new(0, 16, 0, 16)
             thumbKnob.AnchorPoint = Vector2.new(0.5, 0.5)
             thumbKnob.Position = UDim2.new(1, 0, 0.5, 0)
             thumbKnob.BorderSizePixel = 0
@@ -1725,22 +1756,22 @@ function HuDyUI:CreateWindow(config)
             pad.Parent = card
 
             local titleLbl = Instance.new("TextLabel")
-            titleLbl.Size = UDim2.new(1, 0, 0, 16)
+            titleLbl.Size = UDim2.new(1, 0, 0, 20)
             titleLbl.BackgroundTransparency = 1
             titleLbl.Text = HuDyUI.StripIcons(mCfg.Title or "Select Options")
-            titleLbl.TextSize = 10
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = card
 
             local chipGrid = Instance.new("Frame")
             chipGrid.Size = UDim2.new(1, 0, 0, 0)
-            chipGrid.Position = UDim2.new(0, 0, 0, 22)
+            chipGrid.Position = UDim2.new(0, 0, 0, 26)
             chipGrid.AutomaticSize = Enum.AutomaticSize.Y
             chipGrid.BackgroundTransparency = 1
             chipGrid.Parent = card
 
             local gridLayout = Instance.new("UIGridLayout")
-            gridLayout.CellSize = UDim2.new(0.32, 0, 0, 26)
+            gridLayout.CellSize = UDim2.new(0.32, 0, 0, 32)
             gridLayout.CellPadding = UDim2.new(0.015, 0, 0, 6)
             gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
             gridLayout.Parent = chipGrid
@@ -1775,11 +1806,11 @@ function HuDyUI:CreateWindow(config)
                     local c = chips[itemName]
                     if c then
                         local active = (selectedMap[itemName] == true)
-                        c.Btn.BackgroundColor3 = active and activeTheme.CardBg or activeTheme.CardSubBg
-                        c.Btn.TextColor3 = active and activeTheme.TextPrimary or activeTheme.TextMuted
+                        c.Btn.BackgroundColor3 = active and activeTheme.Accent or activeTheme.CardSubBg
+                        c.Btn.TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(220, 226, 238)
                         c.Btn.Text = tostring(itemName) .. (active and " [BẬT]" or " [TẮT]")
                         c.Stroke.Color = active and activeTheme.Accent or activeTheme.Border
-                        c.Stroke.Transparency = active and 0.1 or 0.6
+                        c.Stroke.Transparency = active and 0 or 0.5
                     end
                 end
 
@@ -1792,7 +1823,7 @@ function HuDyUI:CreateWindow(config)
                 local cBtn = Instance.new("TextButton")
                 cBtn.BorderSizePixel = 0
                 cBtn.LayoutOrder = idx
-                cBtn.TextSize = 9
+                cBtn.TextSize = 11
                 cBtn.Parent = chipGrid
 
                 local cCorner = Instance.new("UICorner")
@@ -1867,7 +1898,7 @@ function HuDyUI:CreateWindow(config)
             bCfg = type(bCfg) == "table" and bCfg or { Title = tostring(bCfg or "Button") }
 
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 36)
+            btn.Size = UDim2.new(1, 0, 0, 42)
             btn.BorderSizePixel = 0
             btn.LayoutOrder = elementOrder
             btn.Text = ""
@@ -1886,16 +1917,16 @@ function HuDyUI:CreateWindow(config)
             titleLbl.Position = UDim2.new(0, 12, 0, 0)
             titleLbl.BackgroundTransparency = 1
             titleLbl.Text = HuDyUI.StripIcons(bCfg.Title or "Button")
-            titleLbl.TextSize = 11
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = btn
 
             local badgeLbl = Instance.new("TextLabel")
-            badgeLbl.Size = UDim2.new(0, 95, 0, 22)
-            badgeLbl.Position = UDim2.new(1, -105, 0.5, -11)
+            badgeLbl.Size = UDim2.new(0, 102, 0, 26)
+            badgeLbl.Position = UDim2.new(1, -114, 0.5, -13)
             badgeLbl.BorderSizePixel = 0
             badgeLbl.Text = HuDyUI.StripIcons(bCfg.Badge or "THỰC HIỆN")
-            badgeLbl.TextSize = 9
+            badgeLbl.TextSize = 11
             badgeLbl.Parent = btn
 
             local badgeCorner = Instance.new("UICorner")
@@ -1948,17 +1979,17 @@ function HuDyUI:CreateWindow(config)
             titleLbl.Position = UDim2.new(0, 12, 0, 0)
             titleLbl.BackgroundTransparency = 1
             titleLbl.Text = HuDyUI.StripIcons(iCfg.Title or "Input")
-            titleLbl.TextSize = 11
+            titleLbl.TextSize = 13
             titleLbl.TextXAlignment = Enum.TextXAlignment.Left
             titleLbl.Parent = card
 
             local box = Instance.new("TextBox")
-            box.Size = UDim2.new(0.48, -12, 0, 26)
-            box.Position = UDim2.new(0.52, 0, 0.5, -13)
+            box.Size = UDim2.new(0.48, -12, 0, 28)
+            box.Position = UDim2.new(0.52, 0, 0.5, -14)
             box.BorderSizePixel = 0
             box.PlaceholderText = iCfg.PlaceholderText or iCfg.Placeholder or "Nhập nội dung..."
             box.Text = iCfg.Default or iCfg.Value or ""
-            box.TextSize = 10
+            box.TextSize = 12
             box.ClearTextOnFocus = false
             box.Parent = card
 
@@ -2004,7 +2035,7 @@ function HuDyUI:CreateWindow(config)
         for idx, tName in ipairs(HuDyUI.ThemeOrder) do
             local tData = HuDyUI.Themes[tName]
             local card = Instance.new("TextButton")
-            card.Size = UDim2.new(1, 0, 0, 44)
+            card.Size = UDim2.new(1, 0, 0, 52)
             card.BorderSizePixel = 0
             card.AutoButtonColor = false
             card.LayoutOrder = idx + 1
@@ -2048,7 +2079,7 @@ function HuDyUI:CreateWindow(config)
             nameLbl.Text = string.upper(tData.Name)
             nameLbl.TextColor3 = tData.Accent
             nameLbl.Font = tData.FontTitle
-            nameLbl.TextSize = 11
+            nameLbl.TextSize = 13
             nameLbl.TextXAlignment = Enum.TextXAlignment.Left
             nameLbl.Parent = card
 
@@ -2059,7 +2090,7 @@ function HuDyUI:CreateWindow(config)
             subLbl.Text = tData.Subtitle
             subLbl.TextColor3 = tData.TextMuted
             subLbl.Font = tData.FontBody
-            subLbl.TextSize = 9
+            subLbl.TextSize = 11
             subLbl.TextXAlignment = Enum.TextXAlignment.Left
             subLbl.Parent = card
 
@@ -2068,7 +2099,7 @@ function HuDyUI:CreateWindow(config)
             statusPill.Position = UDim2.new(1, -106, 0.5, -12)
             statusPill.BorderSizePixel = 0
             statusPill.Font = tData.FontTitle
-            statusPill.TextSize = 9
+            statusPill.TextSize = 11
             statusPill.Parent = card
 
             local spCorner = Instance.new("UICorner")
