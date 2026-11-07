@@ -1254,6 +1254,7 @@ function HuDyUI:CreateWindow(config)
                 Label = lbl,
                 Section = function(self, secCfg) return TabObj:Section(secCfg) end,
                 Space = function(self, height) return TabObj:Space(height) end,
+                Divider = function(self) return TabObj:Divider() end,
                 Toggle = function(self, tCfg) return TabObj:Toggle(tCfg) end,
                 Dropdown = function(self, dCfg) return TabObj:Dropdown(dCfg) end,
                 MultiChips = function(self, mCfg) return TabObj:MultiChips(mCfg) end,
@@ -1262,6 +1263,8 @@ function HuDyUI:CreateWindow(config)
                 Paragraph = function(self, pCfg) return TabObj:Paragraph(pCfg) end,
                 InfoCard = function(self, pCfg) return TabObj:Paragraph(pCfg) end,
                 Input = function(self, iCfg) return TabObj:Input(iCfg) end,
+                Keybind = function(self, kCfg) return TabObj:Keybind(kCfg) end,
+                Colorpicker = function(self, cCfg) return TabObj:Colorpicker(cCfg) end,
             }
             setmetatable(SectionObj, {
                 __index = lbl
@@ -1279,6 +1282,24 @@ function HuDyUI:CreateWindow(config)
             spacer.LayoutOrder = elementOrder
             spacer.Parent = page
             return spacer
+        end
+
+        function TabObj:Divider()
+            return TabObj:Space(6)
+        end
+
+        function TabObj:Keybind(kCfg)
+            return {
+                Set = function() end,
+                GetValue = function() return Enum.KeyCode.RightControl end
+            }
+        end
+
+        function TabObj:Colorpicker(cCfg)
+            return {
+                Set = function() end,
+                GetValue = function() return Color3.fromRGB(255, 255, 255) end
+            }
         end
 
         function TabObj:Paragraph(pCfg)
@@ -2106,5 +2127,4 @@ end
 HuDyUI.notify = HuDyUI.Notify
 
 return HuDyUI
-
 
