@@ -1,1 +1,2110 @@
 
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+
+local HuDyUI = {}
+HuDyUI.__index = HuDyUI
+
+-- =============================================================================
+-- DANH SÁCH CÁC CHỦ ĐỀ GIAO DIỆN (THEMES) - TỐI GIẢN, DỊU MẮT, CHỐNG MỎI
+-- =============================================================================
+HuDyUI.Themes = {
+    ["Onyx Dark"] = {
+        Name = "Onyx Dark",
+        Subtitle = "Tối Giản Than Chì & Xanh Slate Dịu Mắt (Mặc Định)",
+        MainBg = Color3.fromRGB(16, 17, 21),
+        SidebarBg = Color3.fromRGB(20, 22, 27),
+        CardBg = Color3.fromRGB(25, 27, 34),
+        CardSubBg = Color3.fromRGB(19, 20, 25),
+        Accent = Color3.fromRGB(99, 102, 241),
+        AccentSecondary = Color3.fromRGB(52, 211, 153),
+        Border = Color3.fromRGB(38, 41, 52),
+        TextPrimary = Color3.fromRGB(241, 245, 249),
+        TextMuted = Color3.fromRGB(148, 163, 184),
+        HexAccent = "#6366f1",
+        HexSecondary = "#34d399",
+        HexMuted = "#94a3b8",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Graphite Silver"] = {
+        Name = "Graphite Silver",
+        Subtitle = "Đen Than Bạc Mờ - Sang Trọng & Êm Mắt",
+        MainBg = Color3.fromRGB(17, 18, 22),
+        SidebarBg = Color3.fromRGB(22, 23, 28),
+        CardBg = Color3.fromRGB(27, 29, 36),
+        CardSubBg = Color3.fromRGB(20, 21, 26),
+        Accent = Color3.fromRGB(203, 213, 225),
+        AccentSecondary = Color3.fromRGB(148, 163, 184),
+        Border = Color3.fromRGB(45, 48, 60),
+        TextPrimary = Color3.fromRGB(248, 250, 252),
+        TextMuted = Color3.fromRGB(156, 163, 175),
+        HexAccent = "#cbd5e1",
+        HexSecondary = "#94a3b8",
+        HexMuted = "#9ca3af",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Sage Forest"] = {
+        Name = "Sage Forest",
+        Subtitle = "Xanh Rêu Thảo Mộc - Dịu Mắt Chống Mỏi",
+        MainBg = Color3.fromRGB(15, 18, 16),
+        SidebarBg = Color3.fromRGB(19, 23, 20),
+        CardBg = Color3.fromRGB(24, 30, 26),
+        CardSubBg = Color3.fromRGB(18, 22, 19),
+        Accent = Color3.fromRGB(52, 211, 153),
+        AccentSecondary = Color3.fromRGB(16, 185, 129),
+        Border = Color3.fromRGB(34, 46, 38),
+        TextPrimary = Color3.fromRGB(240, 253, 244),
+        TextMuted = Color3.fromRGB(140, 168, 155),
+        HexAccent = "#34d399",
+        HexSecondary = "#10b981",
+        HexMuted = "#8ca89b",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Nordic Sky"] = {
+        Name = "Nordic Sky",
+        Subtitle = "Xanh Băng Bắc Âu - Thanh Mát & Tinh Tế",
+        MainBg = Color3.fromRGB(15, 18, 23),
+        SidebarBg = Color3.fromRGB(19, 23, 30),
+        CardBg = Color3.fromRGB(24, 29, 39),
+        CardSubBg = Color3.fromRGB(18, 21, 28),
+        Accent = Color3.fromRGB(56, 189, 248),
+        AccentSecondary = Color3.fromRGB(96, 165, 250),
+        Border = Color3.fromRGB(36, 45, 60),
+        TextPrimary = Color3.fromRGB(240, 249, 255),
+        TextMuted = Color3.fromRGB(148, 163, 184),
+        HexAccent = "#38bdf8",
+        HexSecondary = "#60a5fa",
+        HexMuted = "#94a3b8",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Muted Amber"] = {
+        Name = "Muted Amber",
+        Subtitle = "Hổ Phách Trầm - Tông Nâu Ấm Dịu Dàng",
+        MainBg = Color3.fromRGB(19, 17, 15),
+        SidebarBg = Color3.fromRGB(24, 21, 18),
+        CardBg = Color3.fromRGB(31, 27, 23),
+        CardSubBg = Color3.fromRGB(22, 19, 16),
+        Accent = Color3.fromRGB(245, 158, 11),
+        AccentSecondary = Color3.fromRGB(217, 119, 6),
+        Border = Color3.fromRGB(48, 41, 33),
+        TextPrimary = Color3.fromRGB(254, 249, 195),
+        TextMuted = Color3.fromRGB(180, 165, 145),
+        HexAccent = "#f59e0b",
+        HexSecondary = "#d97706",
+        HexMuted = "#b4a591",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Dusk Rose"] = {
+        Name = "Dusk Rose",
+        Subtitle = "Hồng Hoàng Hôn - Trầm Ấm Không Chói",
+        MainBg = Color3.fromRGB(19, 15, 17),
+        SidebarBg = Color3.fromRGB(25, 19, 22),
+        CardBg = Color3.fromRGB(32, 24, 28),
+        CardSubBg = Color3.fromRGB(22, 17, 20),
+        Accent = Color3.fromRGB(244, 63, 94),
+        AccentSecondary = Color3.fromRGB(225, 29, 72),
+        Border = Color3.fromRGB(50, 36, 42),
+        TextPrimary = Color3.fromRGB(255, 241, 242),
+        TextMuted = Color3.fromRGB(185, 155, 165),
+        HexAccent = "#f43f5e",
+        HexSecondary = "#e11d48",
+        HexMuted = "#b99ba5",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Deep Ocean"] = {
+        Name = "Deep Ocean",
+        Subtitle = "Hải Quân Biển Sâu - Lắng Đọng & Sâu Thẳm",
+        MainBg = Color3.fromRGB(13, 17, 24),
+        SidebarBg = Color3.fromRGB(17, 22, 31),
+        CardBg = Color3.fromRGB(22, 29, 41),
+        CardSubBg = Color3.fromRGB(15, 20, 28),
+        Accent = Color3.fromRGB(14, 165, 233),
+        AccentSecondary = Color3.fromRGB(6, 182, 212),
+        Border = Color3.fromRGB(30, 44, 62),
+        TextPrimary = Color3.fromRGB(240, 249, 255),
+        TextMuted = Color3.fromRGB(140, 170, 195),
+        HexAccent = "#0ea5e9",
+        HexSecondary = "#06b6d4",
+        HexMuted = "#8caac3",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+    ["Soft Lavender"] = {
+        Name = "Soft Lavender",
+        Subtitle = "Tím Thạch Anh Dịu - Tinh Tế & Nhẹ Nhàng",
+        MainBg = Color3.fromRGB(17, 15, 22),
+        SidebarBg = Color3.fromRGB(22, 19, 28),
+        CardBg = Color3.fromRGB(29, 25, 37),
+        CardSubBg = Color3.fromRGB(20, 17, 26),
+        Accent = Color3.fromRGB(167, 139, 250),
+        AccentSecondary = Color3.fromRGB(139, 92, 246),
+        Border = Color3.fromRGB(46, 38, 58),
+        TextPrimary = Color3.fromRGB(250, 245, 255),
+        TextMuted = Color3.fromRGB(175, 160, 195),
+        HexAccent = "#a78bfa",
+        HexSecondary = "#8b5cf6",
+        HexMuted = "#afa0c3",
+        FontTitle = Enum.Font.GothamBold,
+        FontBody = Enum.Font.GothamMedium,
+    },
+}
+
+-- Ánh xạ tương thích ngược các tên theme cũ
+HuDyUI.ThemeAliases = {
+    ["Onyx Modern"] = "Onyx Dark",
+    ["Cyber Neon"] = "Nordic Sky",
+    ["Hacker Matrix"] = "Sage Forest",
+    ["Tet Holiday"] = "Muted Amber",
+    ["Christmas"] = "Sage Forest",
+    ["Halloween"] = "Muted Amber",
+    ["Blood Moon"] = "Dusk Rose",
+    ["Ocean Abyss"] = "Deep Ocean",
+    ["Royal Gold"] = "Soft Lavender",
+}
+for oldName, targetName in pairs(HuDyUI.ThemeAliases) do
+    if HuDyUI.Themes[targetName] then
+        HuDyUI.Themes[oldName] = HuDyUI.Themes[targetName]
+    end
+end
+
+HuDyUI.ThemeOrder = {
+    "Onyx Dark",
+    "Graphite Silver",
+    "Sage Forest",
+    "Nordic Sky",
+    "Muted Amber",
+    "Dusk Rose",
+    "Deep Ocean",
+    "Soft Lavender",
+}
+
+-- Bộ lọc xóa sạch Icon/Emoji khỏi chuỗi văn bản
+local GUI_ICON_TOKENS = {"⚡", "⚠️", "⚠", "🏝️", "📡", "🚀", "❌", "✅", "☠️", "☠", "⚔️", "⚔", "🦑", "📦", "⏳", "🌊", "🔥", "✨", "🛡️", "🛡", "👑", "💎", "🎣", "🗡️", "🗡", "⭐", "🩸", "🦴", "🪵", "🐟", "🎯", "🍓"}
+function HuDyUI.StripIcons(value)
+    local text = tostring(value or "")
+    for _, token in ipairs(GUI_ICON_TOKENS) do
+        text = string.gsub(text, token, "")
+    end
+    return string.gsub(text, "^%s+", "")
+end
+
+-- Hỗ trợ thêm chủ đề mới tùy ý từ script bên ngoài
+function HuDyUI:RegisterTheme(name, themeTable)
+    if type(name) == "string" and type(themeTable) == "table" then
+        themeTable.Name = themeTable.Name or name
+        self.Themes[name] = themeTable
+        local exists = false
+        for _, n in ipairs(self.ThemeOrder) do
+            if n == name then exists = true; break end
+        end
+        if not exists then
+            table.insert(self.ThemeOrder, name)
+        end
+    end
+end
+
+-- =============================================================================
+-- KHỞI TẠO CỬA SỔ CHÍNH + NÚT GÓC PHẢI + THANH TIẾN TRÌNH FARM
+-- =============================================================================
+function HuDyUI:CreateWindow(config)
+    config = type(config) == "table" and config or {}
+
+    local windowTitle    = config.Title or "HUDY HUB"
+    local windowSubtitle = config.Subtitle or "Custom UI Framework"
+    local guiName        = config.GuiName or "HUDY_CUSTOM_SHARED_UI"
+    local configFile     = config.ConfigFile or "HuDy Hub/HuDyUI_Theme.json"
+    local startMinimized = (config.StartMinimized ~= false)
+    local toggleKey      = config.ToggleKey or Enum.KeyCode.RightControl
+    local onThemeChange  = config.OnThemeChanged
+
+    local progressCfg    = type(config.ProgressBar) == "table" and config.ProgressBar or {}
+    local showProgress   = (progressCfg.Enabled ~= false)
+
+    -- Đọc Theme đã lưu nếu có
+    local savedTheme = nil
+    pcall(function()
+        if isfile and readfile and isfile(configFile) then
+            local raw = readfile(configFile)
+            local dec = HttpService:JSONDecode(raw)
+            if type(dec) == "table" and type(dec.Theme) == "string" then
+                local alias = self.ThemeAliases and self.ThemeAliases[dec.Theme] or dec.Theme
+                if self.Themes[alias] then
+                    savedTheme = alias
+                end
+            end
+        end
+    end)
+
+    local reqTheme = config.Theme
+    if reqTheme and self.ThemeAliases and self.ThemeAliases[reqTheme] then
+        reqTheme = self.ThemeAliases[reqTheme]
+    end
+
+    local currentThemeName = savedTheme
+        or (reqTheme and self.Themes[reqTheme] and reqTheme)
+        or "Onyx Dark"
+    local activeTheme = self.Themes[currentThemeName]
+
+    local parentGui = (gethui and gethui()) or CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+    local oldGui = parentGui:FindFirstChild(guiName)
+    if oldGui then oldGui:Destroy() end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = guiName
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.DisplayOrder = 100000
+
+    local connections = {}
+    local themeListeners = {}
+
+    local function AddConnection(conn)
+        if typeof(conn) == "RBXScriptConnection" then
+            table.insert(connections, conn)
+        end
+        return conn
+    end
+
+    -- =========================================================================
+    -- HỆ THỐNG ÂM THANH PHẢN HỒI (SFX ENGINE - TƯƠNG TỰ ONYX V2 / MM2)
+    -- =========================================================================
+    local SoundService = game:GetService("SoundService")
+    local sfxCache = {}
+    local SFX_IDS = {
+        toggle = 136108770017536,
+        click  = 139800881181209,
+        notify = 131039887376992,
+    }
+    local function PlaySound(name)
+        if config.SoundEffects == false then return end
+        local assetId = SFX_IDS[name]
+        if not assetId then return end
+        pcall(function()
+            local sound = sfxCache[name]
+            if not sound or not sound.Parent then
+                sound = Instance.new("Sound")
+                sound.Name = "HuDyUI_SFX_" .. name
+                sound.SoundId = "rbxassetid://" .. assetId
+                sound.Volume = 0.45
+                sound.Parent = SoundService
+                sfxCache[name] = sound
+            end
+            sound.TimePosition = 0
+            sound:Play()
+        end)
+    end
+
+    local function OnThemeChanged(fn)
+        table.insert(themeListeners, fn)
+        pcall(fn, activeTheme)
+    end
+
+    local function SaveThemePreference(themeName)
+        if not writefile then return end
+        pcall(function()
+            local folder = string.match(configFile, "^(.-)/[^/]+$")
+            if folder and folder ~= "" and isfolder and makefolder and not isfolder(folder) then
+                makefolder(folder)
+            end
+            writefile(configFile, HttpService:JSONEncode({ Theme = themeName }))
+        end)
+    end
+
+    local function ApplyTheme(themeName)
+        if not self.Themes[themeName] then return end
+        currentThemeName = themeName
+        activeTheme = self.Themes[themeName]
+        SaveThemePreference(themeName)
+        for _, fn in ipairs(themeListeners) do
+            pcall(fn, activeTheme)
+        end
+        if type(onThemeChange) == "function" then
+            pcall(onThemeChange, themeName, activeTheme)
+        end
+    end
+
+    local function CycleNextTheme()
+        local idx = 1
+        for i, name in ipairs(self.ThemeOrder) do
+            if name == currentThemeName then
+                idx = i
+                break
+            end
+        end
+        local nextIdx = (idx % #self.ThemeOrder) + 1
+        ApplyTheme(self.ThemeOrder[nextIdx])
+    end
+
+    -- Helper kéo thả mượt trên cả PC và Mobile
+    local function MakeDraggable(dragHandle, targetFrame)
+        local dragging = false
+        local dragInput = nil
+        local dragStart = nil
+        local startPos = nil
+        local movedDistance = 0
+
+        AddConnection(dragHandle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = targetFrame.Position
+                movedDistance = 0
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end))
+
+        AddConnection(dragHandle.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end))
+
+        AddConnection(UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging and dragStart and startPos then
+                local delta = input.Position - dragStart
+                movedDistance = delta.Magnitude
+                targetFrame.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end))
+
+        return function()
+            return movedDistance > 6
+        end
+    end
+
+    -- =========================================================================
+    -- 1. NÚT PILL MỞ MENU KHI THU NHỎ (TỰ ĐỘNG ẨN KHI MENU MỞ - NHƯ ONYX V2)
+    -- =========================================================================
+    local isMenuOpen = not startMinimized
+    local mainWindowFrame = nil
+    local windowScale = nil
+
+    local rightMenuBtn = Instance.new("TextButton")
+    rightMenuBtn.Name = "HuDyMenuToggleButton"
+    rightMenuBtn.AnchorPoint = config.MenuButtonAnchor or Vector2.new(0, 0)
+    rightMenuBtn.Size = UDim2.new(0, 104, 0, 30)
+    rightMenuBtn.Position = config.MenuButtonPosition or UDim2.new(0, 16, 0, 56)
+    rightMenuBtn.BorderSizePixel = 0
+    rightMenuBtn.AutoButtonColor = false
+    rightMenuBtn.Text = config.OpenButtonText or "HuDy Menu"
+    rightMenuBtn.TextSize = 10
+    rightMenuBtn.Visible = not isMenuOpen
+    rightMenuBtn.Parent = screenGui
+
+    local rightMenuCorner = Instance.new("UICorner")
+    rightMenuCorner.CornerRadius = UDim.new(0, 15)
+    rightMenuCorner.Parent = rightMenuBtn
+
+    local rightMenuGradient = Instance.new("UIGradient")
+    rightMenuGradient.Rotation = 90
+    rightMenuGradient.Color = ColorSequence.new(Color3.fromRGB(28, 30, 38), Color3.fromRGB(18, 19, 24))
+    rightMenuGradient.Parent = rightMenuBtn
+
+    local rightMenuStroke = Instance.new("UIStroke")
+    rightMenuStroke.Thickness = 1
+    rightMenuStroke.Transparency = 0.4
+    rightMenuStroke.Parent = rightMenuBtn
+
+    local rightMenuDot = Instance.new("Frame")
+    rightMenuDot.Size = UDim2.new(0, 6, 0, 6)
+    rightMenuDot.Position = UDim2.new(0, 10, 0.5, -3)
+    rightMenuDot.BorderSizePixel = 0
+    rightMenuDot.Parent = rightMenuBtn
+
+    local rightMenuDotCorner = Instance.new("UICorner")
+    rightMenuDotCorner.CornerRadius = UDim.new(1, 0)
+    rightMenuDotCorner.Parent = rightMenuDot
+
+    local wasRightBtnDragged = MakeDraggable(rightMenuBtn, rightMenuBtn)
+
+    local function UpdateMenuOpenState(openState)
+        isMenuOpen = (openState == true)
+        PlaySound("click")
+        if isMenuOpen then
+            rightMenuBtn.Visible = false
+            if mainWindowFrame then
+                mainWindowFrame.Visible = true
+                if windowScale then
+                    windowScale.Scale = 0.94
+                    TweenService:Create(windowScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+                end
+            end
+        else
+            if mainWindowFrame then
+                if windowScale then
+                    local tween = TweenService:Create(windowScale, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.94 })
+                    tween:Play()
+                    tween.Completed:Connect(function()
+                        if not isMenuOpen then
+                            mainWindowFrame.Visible = false
+                        end
+                    end)
+                else
+                    mainWindowFrame.Visible = false
+                end
+            end
+            rightMenuBtn.Visible = true
+        end
+    end
+
+    OnThemeChanged(function(theme)
+        rightMenuBtn.Font = theme.FontTitle
+        rightMenuBtn.TextColor3 = theme.TextPrimary
+        rightMenuStroke.Color = theme.Border
+        rightMenuDot.BackgroundColor3 = theme.Accent
+    end)
+
+    rightMenuBtn.MouseButton1Click:Connect(function()
+        if wasRightBtnDragged() then return end
+        UpdateMenuOpenState(true)
+    end)
+
+    if toggleKey then
+        AddConnection(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.KeyCode == toggleKey then
+                UpdateMenuOpenState(not isMenuOpen)
+            end
+        end))
+    end
+
+    -- =========================================================================
+    -- 2. THANH UI TRẠNG THÁI TIẾN TRÌNH FARM (PROGRESS STATUS BAR)
+    -- =========================================================================
+    local statusBarFrame = Instance.new("Frame")
+    statusBarFrame.Name = "FarmProgressStatusBar"
+    statusBarFrame.AnchorPoint = Vector2.new(0.5, 0)
+    statusBarFrame.Size = UDim2.new(0, 490, 0, 0)
+    statusBarFrame.AutomaticSize = Enum.AutomaticSize.Y
+    statusBarFrame.Position = UDim2.new(0.5, 0, 0, 10)
+    statusBarFrame.BackgroundTransparency = 0.04
+    statusBarFrame.BorderSizePixel = 0
+    statusBarFrame.Active = true
+    statusBarFrame.Visible = showProgress
+    statusBarFrame.Parent = screenGui
+
+    local barCorner = Instance.new("UICorner")
+    barCorner.CornerRadius = UDim.new(0, 7)
+    barCorner.Parent = statusBarFrame
+
+    local barStroke = Instance.new("UIStroke")
+    barStroke.Thickness = 1
+    barStroke.Parent = statusBarFrame
+
+    local barPadding = Instance.new("UIPadding")
+    barPadding.PaddingTop = UDim.new(0, 6)
+    barPadding.PaddingBottom = UDim.new(0, 6)
+    barPadding.PaddingLeft = UDim.new(0, 10)
+    barPadding.PaddingRight = UDim.new(0, 10)
+    barPadding.Parent = statusBarFrame
+
+    local barLayout = Instance.new("UIListLayout")
+    barLayout.FillDirection = Enum.FillDirection.Vertical
+    barLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    barLayout.Padding = UDim.new(0, 4)
+    barLayout.Parent = statusBarFrame
+
+    local barHeader = Instance.new("Frame")
+    barHeader.Size = UDim2.new(1, 0, 0, 20)
+    barHeader.BackgroundTransparency = 1
+    barHeader.LayoutOrder = 1
+    barHeader.Active = true
+    barHeader.Parent = statusBarFrame
+
+    MakeDraggable(barHeader, statusBarFrame)
+
+    local barTitleLabel = Instance.new("TextLabel")
+    barTitleLabel.Size = UDim2.new(0, 220, 1, 0)
+    barTitleLabel.BackgroundTransparency = 1
+    barTitleLabel.Text = progressCfg.Title or "HUDY HUB | KAITUN PROGRESS"
+    barTitleLabel.TextSize = 10
+    barTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    barTitleLabel.Parent = barHeader
+
+    local barThemeBadge = Instance.new("TextButton")
+    barThemeBadge.Size = UDim2.new(0, 84, 0, 18)
+    barThemeBadge.Position = UDim2.new(1, -244, 0, 1)
+    barThemeBadge.BorderSizePixel = 0
+    barThemeBadge.Text = currentThemeName
+    barThemeBadge.TextSize = 8
+    barThemeBadge.Parent = barHeader
+
+    local barThemeCorner = Instance.new("UICorner")
+    barThemeCorner.CornerRadius = UDim.new(0, 4)
+    barThemeCorner.Parent = barThemeBadge
+
+    local barThemeStroke = Instance.new("UIStroke")
+    barThemeStroke.Thickness = 1
+    barThemeStroke.Parent = barThemeBadge
+
+    barThemeBadge.MouseButton1Click:Connect(function()
+        CycleNextTheme()
+    end)
+
+    local seaBadge = Instance.new("TextLabel")
+    seaBadge.Size = UDim2.new(0, 50, 0, 18)
+    seaBadge.Position = UDim2.new(1, -154, 0, 1)
+    seaBadge.Text = progressCfg.Badge or "SEA 1"
+    seaBadge.TextSize = 9
+    seaBadge.Parent = barHeader
+
+    local seaBadgeCorner = Instance.new("UICorner")
+    seaBadgeCorner.CornerRadius = UDim.new(0, 4)
+    seaBadgeCorner.Parent = seaBadge
+
+    local seaBadgeStroke = Instance.new("UIStroke")
+    seaBadgeStroke.Thickness = 1
+    seaBadgeStroke.Parent = seaBadge
+
+    local quickToggleState = (progressCfg.QuickToggleState ~= false)
+    local quickFarmBtn = Instance.new("TextButton")
+    quickFarmBtn.Size = UDim2.new(0, 48, 0, 18)
+    quickFarmBtn.Position = UDim2.new(1, -98, 0, 1)
+    quickFarmBtn.Text = quickToggleState and "BẬT" or "TẮT"
+    quickFarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    quickFarmBtn.TextSize = 9
+    quickFarmBtn.Parent = barHeader
+
+    local quickFarmCorner = Instance.new("UICorner")
+    quickFarmCorner.CornerRadius = UDim.new(0, 4)
+    quickFarmCorner.Parent = quickFarmBtn
+
+    local quickFarmStroke = Instance.new("UIStroke")
+    quickFarmStroke.Thickness = 1
+    quickFarmStroke.Parent = quickFarmBtn
+
+    local function SyncQuickToggleVisual(state)
+        quickToggleState = (state == true)
+        quickFarmBtn.Text = quickToggleState and "BẬT" or "TẮT"
+        quickFarmBtn.BackgroundColor3 = quickToggleState and (activeTheme.AccentSecondary or activeTheme.Accent) or activeTheme.CardSubBg
+        quickFarmStroke.Color = quickToggleState and (activeTheme.AccentSecondary or activeTheme.Accent) or activeTheme.Border
+        quickFarmBtn.TextColor3 = quickToggleState and Color3.fromRGB(255, 255, 255) or activeTheme.TextMuted
+    end
+
+    quickFarmBtn.MouseButton1Click:Connect(function()
+        SyncQuickToggleVisual(not quickToggleState)
+        if type(progressCfg.OnQuickToggle) == "function" then
+            pcall(progressCfg.OnQuickToggle, quickToggleState)
+        end
+    end)
+
+    local collapseBarBtn = Instance.new("TextButton")
+    collapseBarBtn.Size = UDim2.new(0, 44, 0, 18)
+    collapseBarBtn.Position = UDim2.new(1, -44, 0, 1)
+    collapseBarBtn.Text = "GỌN"
+    collapseBarBtn.TextSize = 8
+    collapseBarBtn.Parent = barHeader
+
+    local collapseBarCorner = Instance.new("UICorner")
+    collapseBarCorner.CornerRadius = UDim.new(0, 4)
+    collapseBarCorner.Parent = collapseBarBtn
+
+    local collapseBarStroke = Instance.new("UIStroke")
+    collapseBarStroke.Thickness = 1
+    collapseBarStroke.Parent = collapseBarBtn
+
+    local progressContainer = Instance.new("Frame")
+    progressContainer.Size = UDim2.new(1, 0, 0, 26)
+    progressContainer.BorderSizePixel = 0
+    progressContainer.LayoutOrder = 2
+    progressContainer.Parent = statusBarFrame
+
+    local progressCorner = Instance.new("UICorner")
+    progressCorner.CornerRadius = UDim.new(0, 6)
+    progressCorner.Parent = progressContainer
+
+    local progressStroke = Instance.new("UIStroke")
+    progressStroke.Thickness = 1
+    progressStroke.Parent = progressContainer
+
+    local stageProgressLabel = Instance.new("TextLabel")
+    stageProgressLabel.Size = UDim2.new(0.58, -8, 0, 12)
+    stageProgressLabel.Position = UDim2.new(0, 8, 0, 2)
+    stageProgressLabel.BackgroundTransparency = 1
+    stageProgressLabel.Text = "GIAI ĐOẠN: Đang đồng bộ..."
+    stageProgressLabel.TextSize = 9
+    stageProgressLabel.TextXAlignment = Enum.TextXAlignment.Left
+    stageProgressLabel.Parent = progressContainer
+
+    local totalProgressLabel = Instance.new("TextLabel")
+    totalProgressLabel.Size = UDim2.new(0.42, -8, 0, 12)
+    totalProgressLabel.Position = UDim2.new(0.58, 0, 0, 2)
+    totalProgressLabel.BackgroundTransparency = 1
+    totalProgressLabel.Text = "TỔNG: --"
+    totalProgressLabel.TextSize = 9
+    totalProgressLabel.TextXAlignment = Enum.TextXAlignment.Right
+    totalProgressLabel.Parent = progressContainer
+
+    local progressTrack = Instance.new("Frame")
+    progressTrack.Size = UDim2.new(1, -16, 0, 6)
+    progressTrack.Position = UDim2.new(0, 8, 1, -9)
+    progressTrack.BorderSizePixel = 0
+    progressTrack.Parent = progressContainer
+
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = progressTrack
+
+    local progressFill = Instance.new("Frame")
+    progressFill.Size = UDim2.new(0, 0, 1, 0)
+    progressFill.BorderSizePixel = 0
+    progressFill.Parent = progressTrack
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = progressFill
+
+    local fillGradient = Instance.new("UIGradient")
+    fillGradient.Parent = progressFill
+
+    local barDetailBox = Instance.new("Frame")
+    barDetailBox.Size = UDim2.new(1, 0, 0, 0)
+    barDetailBox.AutomaticSize = Enum.AutomaticSize.Y
+    barDetailBox.BorderSizePixel = 0
+    barDetailBox.LayoutOrder = 3
+    barDetailBox.Parent = statusBarFrame
+
+    local barDetailCorner = Instance.new("UICorner")
+    barDetailCorner.CornerRadius = UDim.new(0, 6)
+    barDetailCorner.Parent = barDetailBox
+
+    local barDetailStroke = Instance.new("UIStroke")
+    barDetailStroke.Thickness = 1
+    barDetailStroke.Parent = barDetailBox
+
+    local barDetailPadding = Instance.new("UIPadding")
+    barDetailPadding.PaddingTop = UDim.new(0, 6)
+    barDetailPadding.PaddingBottom = UDim.new(0, 6)
+    barDetailPadding.PaddingLeft = UDim.new(0, 8)
+    barDetailPadding.PaddingRight = UDim.new(0, 8)
+    barDetailPadding.Parent = barDetailBox
+
+    local barDetailText = Instance.new("TextLabel")
+    barDetailText.Size = UDim2.new(1, 0, 0, 0)
+    barDetailText.AutomaticSize = Enum.AutomaticSize.Y
+    barDetailText.BackgroundTransparency = 1
+    barDetailText.TextSize = 10
+    barDetailText.TextXAlignment = Enum.TextXAlignment.Left
+    barDetailText.TextYAlignment = Enum.TextYAlignment.Top
+    barDetailText.TextWrapped = true
+    barDetailText.RichText = true
+    barDetailText.Text = "<b>TRẠNG THÁI:</b> Khởi tạo...\n<b>TIẾN ĐỘ:</b> Đang đồng bộ..."
+    barDetailText.Parent = barDetailBox
+
+    local isBarCollapsed = false
+    collapseBarBtn.MouseButton1Click:Connect(function()
+        isBarCollapsed = not isBarCollapsed
+        collapseBarBtn.Text = isBarCollapsed and "MỞ" or "GỌN"
+        barDetailBox.Visible = not isBarCollapsed
+    end)
+
+    -- =========================================================================
+    -- 3. CỬA SỔ MENU CHÍNH CUSTOM (MAIN WINDOW)
+    -- =========================================================================
+    mainWindowFrame = Instance.new("Frame")
+    mainWindowFrame.Name = "MainCustomWindow"
+    mainWindowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainWindowFrame.Size = config.Size or UDim2.new(0, 620, 0, 360)
+    mainWindowFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    mainWindowFrame.BackgroundTransparency = 0.02
+    mainWindowFrame.BorderSizePixel = 0
+    mainWindowFrame.Active = true
+    mainWindowFrame.Visible = isMenuOpen
+    mainWindowFrame.Parent = screenGui
+
+    windowScale = Instance.new("UIScale")
+    windowScale.Scale = isMenuOpen and 1 or 0.94
+    windowScale.Parent = mainWindowFrame
+
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = mainWindowFrame
+
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Thickness = 1
+    mainStroke.Parent = mainWindowFrame
+
+    local windowTopbar = Instance.new("Frame")
+    windowTopbar.Size = UDim2.new(1, 0, 0, 38)
+    windowTopbar.BorderSizePixel = 0
+    windowTopbar.Active = true
+    windowTopbar.Parent = mainWindowFrame
+
+    local windowTopbarCorner = Instance.new("UICorner")
+    windowTopbarCorner.CornerRadius = UDim.new(0, 8)
+    windowTopbarCorner.Parent = windowTopbar
+
+    local windowTopbarDivider = Instance.new("Frame")
+    windowTopbarDivider.Size = UDim2.new(1, 0, 0, 1)
+    windowTopbarDivider.Position = UDim2.new(0, 0, 1, -1)
+    windowTopbarDivider.BorderSizePixel = 0
+    windowTopbarDivider.Parent = windowTopbar
+
+    MakeDraggable(windowTopbar, mainWindowFrame)
+
+    local windowTitleLabel = Instance.new("TextLabel")
+    windowTitleLabel.Size = UDim2.new(0, 240, 0, 18)
+    windowTitleLabel.Position = UDim2.new(0, 14, 0, 4)
+    windowTitleLabel.BackgroundTransparency = 1
+    windowTitleLabel.Text = windowTitle
+    windowTitleLabel.TextSize = 12
+    windowTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    windowTitleLabel.Parent = windowTopbar
+
+    local windowSubtitleLabel = Instance.new("TextLabel")
+    windowSubtitleLabel.Size = UDim2.new(0, 260, 0, 14)
+    windowSubtitleLabel.Position = UDim2.new(0, 14, 0, 21)
+    windowSubtitleLabel.BackgroundTransparency = 1
+    windowSubtitleLabel.Text = windowSubtitle
+    windowSubtitleLabel.TextSize = 9
+    windowSubtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    windowSubtitleLabel.Parent = windowTopbar
+
+    local windowTagsHolder = Instance.new("Frame")
+    windowTagsHolder.Size = UDim2.new(0, 180, 0, 22)
+    windowTagsHolder.Position = UDim2.new(1, -350, 0.5, -11)
+    windowTagsHolder.BackgroundTransparency = 1
+    windowTagsHolder.Parent = windowTopbar
+
+    local tagsLayout = Instance.new("UIListLayout")
+    tagsLayout.FillDirection = Enum.FillDirection.Horizontal
+    tagsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    tagsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    tagsLayout.Padding = UDim.new(0, 5)
+    tagsLayout.Parent = windowTagsHolder
+
+    local topThemeCycleBtn = Instance.new("TextButton")
+    topThemeCycleBtn.Size = UDim2.new(0, 84, 0, 24)
+    topThemeCycleBtn.Position = UDim2.new(1, -164, 0.5, -12)
+    topThemeCycleBtn.BorderSizePixel = 0
+    topThemeCycleBtn.Text = "Đổi Theme"
+    topThemeCycleBtn.TextSize = 10
+    topThemeCycleBtn.Parent = windowTopbar
+
+    local topThemeCorner = Instance.new("UICorner")
+    topThemeCorner.CornerRadius = UDim.new(0, 5)
+    topThemeCorner.Parent = topThemeCycleBtn
+
+    local topThemeStroke = Instance.new("UIStroke")
+    topThemeStroke.Thickness = 1
+    topThemeStroke.Parent = topThemeCycleBtn
+
+    topThemeCycleBtn.MouseButton1Click:Connect(function()
+        PlaySound("click")
+        CycleNextTheme()
+    end)
+
+    local topCloseBtn = Instance.new("TextButton")
+    topCloseBtn.Size = UDim2.new(0, 72, 0, 24)
+    topCloseBtn.Position = UDim2.new(1, -76, 0.5, -12)
+    topCloseBtn.BorderSizePixel = 0
+    topCloseBtn.Text = "Thu Nhỏ"
+    topCloseBtn.TextSize = 10
+    topCloseBtn.Parent = windowTopbar
+
+    local topCloseCorner = Instance.new("UICorner")
+    topCloseCorner.CornerRadius = UDim.new(0, 5)
+    topCloseCorner.Parent = topCloseBtn
+
+    local topCloseStroke = Instance.new("UIStroke")
+    topCloseStroke.Thickness = 1
+    topCloseStroke.Parent = topCloseBtn
+
+    topCloseBtn.MouseButton1Click:Connect(function()
+        UpdateMenuOpenState(false)
+    end)
+
+    local sidebarFrame = Instance.new("ScrollingFrame")
+    sidebarFrame.Size = UDim2.new(0, 150, 1, -44)
+    sidebarFrame.Position = UDim2.new(0, 6, 0, 40)
+    sidebarFrame.BorderSizePixel = 0
+    sidebarFrame.ScrollBarThickness = 2
+    sidebarFrame.ScrollBarImageTransparency = 0.5
+    sidebarFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    sidebarFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    sidebarFrame.Parent = mainWindowFrame
+
+    local sidebarCorner = Instance.new("UICorner")
+    sidebarCorner.CornerRadius = UDim.new(0, 7)
+    sidebarCorner.Parent = sidebarFrame
+
+    local sidebarStroke = Instance.new("UIStroke")
+    sidebarStroke.Thickness = 1
+    sidebarStroke.Parent = sidebarFrame
+
+    local sidebarPadding = Instance.new("UIPadding")
+    sidebarPadding.PaddingTop = UDim.new(0, 6)
+    sidebarPadding.PaddingBottom = UDim.new(0, 6)
+    sidebarPadding.PaddingLeft = UDim.new(0, 6)
+    sidebarPadding.PaddingRight = UDim.new(0, 6)
+    sidebarPadding.Parent = sidebarFrame
+
+    local sidebarLayout = Instance.new("UIListLayout")
+    sidebarLayout.FillDirection = Enum.FillDirection.Vertical
+    sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    sidebarLayout.Padding = UDim.new(0, 4)
+    sidebarLayout.Parent = sidebarFrame
+
+    local contentHolder = Instance.new("Frame")
+    contentHolder.Size = UDim2.new(1, -164, 1, -44)
+    contentHolder.Position = UDim2.new(0, 158, 0, 40)
+    contentHolder.BackgroundTransparency = 1
+    contentHolder.BorderSizePixel = 0
+    contentHolder.Parent = mainWindowFrame
+
+    -- Khung chứa thông báo góc dưới bên phải (Toast Notification - Không Icon)
+    local notifyContainer = Instance.new("Frame")
+    notifyContainer.Name = "Notifications"
+    notifyContainer.AnchorPoint = Vector2.new(1, 1)
+    notifyContainer.Size = UDim2.new(0, 280, 0, 300)
+    notifyContainer.Position = UDim2.new(1, -16, 1, -16)
+    notifyContainer.BackgroundTransparency = 1
+    notifyContainer.Parent = screenGui
+
+    local notifyLayout = Instance.new("UIListLayout")
+    notifyLayout.FillDirection = Enum.FillDirection.Vertical
+    notifyLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    notifyLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    notifyLayout.Padding = UDim.new(0, 6)
+    notifyLayout.Parent = notifyContainer
+
+    local tabs = {}
+    local tabCount = 0
+    local currentTabId = nil
+
+    local function SelectTab(tabId)
+        currentTabId = tabId
+        PlaySound("click")
+        for id, info in pairs(tabs) do
+            local isSelected = (id == tabId)
+            info.Page.Visible = isSelected
+            info.Button.BackgroundColor3 = isSelected and activeTheme.CardBg or activeTheme.CardSubBg
+            info.Button.TextColor3 = isSelected and activeTheme.Accent or activeTheme.TextMuted
+            info.Stroke.Color = isSelected and activeTheme.Accent or activeTheme.Border
+            info.Indicator.BackgroundColor3 = isSelected and activeTheme.Accent or activeTheme.Border
+            info.Indicator.Visible = isSelected
+        end
+    end
+
+    OnThemeChanged(function(theme)
+        mainWindowFrame.BackgroundColor3 = theme.MainBg
+        mainStroke.Color = theme.Border
+        windowTopbar.BackgroundColor3 = theme.SidebarBg
+        windowTopbarDivider.BackgroundColor3 = theme.Border
+        windowTitleLabel.Font = theme.FontTitle
+        windowTitleLabel.TextColor3 = theme.TextPrimary
+        windowSubtitleLabel.Font = theme.FontBody
+        windowSubtitleLabel.TextColor3 = theme.TextMuted
+        windowSubtitleLabel.Text = "Chủ đề: " .. theme.Name .. " — " .. theme.Subtitle
+
+        topThemeCycleBtn.BackgroundColor3 = theme.CardSubBg
+        topThemeCycleBtn.TextColor3 = theme.TextPrimary
+        topThemeCycleBtn.Font = theme.FontTitle
+        topThemeStroke.Color = theme.Border
+
+        topCloseBtn.BackgroundColor3 = theme.CardSubBg
+        topCloseBtn.TextColor3 = theme.TextMuted
+        topCloseBtn.Font = theme.FontTitle
+        topCloseStroke.Color = theme.Border
+
+        sidebarFrame.BackgroundColor3 = theme.SidebarBg
+        sidebarStroke.Color = theme.Border
+
+        statusBarFrame.BackgroundColor3 = theme.MainBg
+        barStroke.Color = theme.Border
+        barTitleLabel.Font = theme.FontTitle
+        barTitleLabel.TextColor3 = theme.TextPrimary
+
+        barThemeBadge.BackgroundColor3 = theme.CardSubBg
+        barThemeBadge.TextColor3 = theme.TextMuted
+        barThemeBadge.Font = theme.FontTitle
+        barThemeBadge.Text = theme.Name
+        barThemeStroke.Color = theme.Border
+
+        seaBadge.BackgroundColor3 = theme.CardSubBg
+        seaBadge.TextColor3 = theme.AccentSecondary
+        seaBadge.Font = theme.FontTitle
+        seaBadgeStroke.Color = theme.Border
+
+        quickFarmBtn.Font = theme.FontTitle
+        SyncQuickToggleVisual(quickToggleState)
+
+        collapseBarBtn.BackgroundColor3 = theme.CardSubBg
+        collapseBarBtn.TextColor3 = theme.TextPrimary
+        collapseBarBtn.Font = theme.FontTitle
+        collapseBarStroke.Color = theme.Border
+
+        progressContainer.BackgroundColor3 = theme.CardBg
+        progressStroke.Color = theme.Border
+        stageProgressLabel.Font = theme.FontBody
+        stageProgressLabel.TextColor3 = theme.TextPrimary
+        totalProgressLabel.Font = theme.FontBody
+        totalProgressLabel.TextColor3 = theme.TextMuted
+        progressTrack.BackgroundColor3 = theme.CardSubBg
+        progressFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        fillGradient.Color = ColorSequence.new(theme.Accent, theme.AccentSecondary)
+
+        barDetailBox.BackgroundColor3 = theme.CardBg
+        barDetailStroke.Color = theme.Border
+        barDetailText.Font = theme.FontBody
+        barDetailText.TextColor3 = theme.TextPrimary
+    end)
+
+    local WindowObj = {}
+
+    function WindowObj:GetTheme()
+        return activeTheme, currentThemeName
+    end
+
+    function WindowObj:SetTheme(themeName)
+        ApplyTheme(themeName)
+    end
+
+    function WindowObj:NextTheme()
+        CycleNextTheme()
+    end
+
+    function WindowObj:Open()
+        UpdateMenuOpenState(true)
+    end
+
+    function WindowObj:Close()
+        UpdateMenuOpenState(false)
+    end
+
+    function WindowObj:Toggle()
+        UpdateMenuOpenState(not isMenuOpen)
+    end
+
+    function WindowObj:SetQuickToggle(state)
+        SyncQuickToggleVisual(state)
+    end
+
+    function WindowObj:Tag(tagCfg)
+        tagCfg = type(tagCfg) == "table" and tagCfg or { Title = tostring(tagCfg or "") }
+        local tagText = HuDyUI.StripIcons(tagCfg.Title or "Tag")
+        local tagPill = Instance.new("Frame")
+        tagPill.Size = UDim2.new(0, 0, 0, 18)
+        tagPill.AutomaticSize = Enum.AutomaticSize.X
+        tagPill.BackgroundColor3 = activeTheme.CardSubBg
+        tagPill.BorderSizePixel = 0
+        tagPill.Parent = windowTagsHolder
+
+        local tCorner = Instance.new("UICorner")
+        tCorner.CornerRadius = UDim.new(0, tagCfg.Radius or 4)
+        tCorner.Parent = tagPill
+
+        local tStroke = Instance.new("UIStroke")
+        tStroke.Thickness = 1
+        tStroke.Color = activeTheme.Border
+        tStroke.Parent = tagPill
+
+        local tPad = Instance.new("UIPadding")
+        tPad.PaddingLeft = UDim.new(0, 6)
+        tPad.PaddingRight = UDim.new(0, 6)
+        tPad.Parent = tagPill
+
+        local tLbl = Instance.new("TextLabel")
+        tLbl.Size = UDim2.new(0, 0, 1, 0)
+        tLbl.AutomaticSize = Enum.AutomaticSize.X
+        tLbl.BackgroundTransparency = 1
+        tLbl.Text = tagText
+        tLbl.TextColor3 = tagCfg.Color or activeTheme.TextMuted
+        tLbl.Font = activeTheme.FontBody
+        tLbl.TextSize = 8
+        tLbl.Parent = tagPill
+
+        OnThemeChanged(function(theme)
+            tagPill.BackgroundColor3 = theme.CardSubBg
+            tStroke.Color = theme.Border
+            tLbl.TextColor3 = tagCfg.Color or theme.TextMuted
+        end)
+        return tagPill
+    end
+
+    function WindowObj:UpdateProgressBar(data)
+        if type(data) ~= "table" then return end
+        if data.Badge then
+            seaBadge.Text = tostring(data.Badge)
+        end
+        if data.StageText then
+            stageProgressLabel.Text = tostring(data.StageText)
+        end
+        if data.TotalText then
+            totalProgressLabel.Text = tostring(data.TotalText)
+        end
+        if type(data.Progress) == "number" then
+            progressFill.Size = UDim2.new(math.clamp(data.Progress, 0, 1), 0, 1, 0)
+        end
+        if data.StatusText or data.DetailText then
+            local sText = HuDyUI.StripIcons(data.StatusText or "Sẵn sàng")
+            local dText = HuDyUI.StripIcons(data.DetailText or "")
+            barDetailText.Text = string.format(
+                "<font color='%s'><b>TRẠNG THÁI:</b></font> %s\n<font color='%s'><b>TIẾN ĐỘ:</b></font> %s",
+                activeTheme.HexAccent,
+                sText,
+                activeTheme.HexMuted,
+                dText
+            )
+        end
+    end
+
+    function WindowObj:Notify(notifyCfg)
+        notifyCfg = type(notifyCfg) == "table" and notifyCfg or { Content = tostring(notifyCfg or "") }
+        local nTitle = HuDyUI.StripIcons(notifyCfg.Title or "HUDY HUB")
+        local nContent = HuDyUI.StripIcons(notifyCfg.Content or "")
+        local duration = tonumber(notifyCfg.Duration) or 3
+
+        PlaySound("notify")
+
+        local card = Instance.new("Frame")
+        card.Size = UDim2.new(1, 0, 0, 0)
+        card.AutomaticSize = Enum.AutomaticSize.Y
+        card.BackgroundColor3 = activeTheme.CardBg
+        card.BorderSizePixel = 0
+        card.Parent = notifyContainer
+
+        local cScale = Instance.new("UIScale")
+        cScale.Scale = 0.92
+        cScale.Parent = card
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 7)
+        corner.Parent = card
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = activeTheme.Border
+        stroke.Thickness = 1
+        stroke.Parent = card
+
+        local pad = Instance.new("UIPadding")
+        pad.PaddingTop = UDim.new(0, 8)
+        pad.PaddingBottom = UDim.new(0, 8)
+        pad.PaddingLeft = UDim.new(0, 10)
+        pad.PaddingRight = UDim.new(0, 10)
+        pad.Parent = card
+
+        local list = Instance.new("UIListLayout")
+        list.FillDirection = Enum.FillDirection.Vertical
+        list.SortOrder = Enum.SortOrder.LayoutOrder
+        list.Padding = UDim.new(0, 3)
+        list.Parent = card
+
+        local tLbl = Instance.new("TextLabel")
+        tLbl.Size = UDim2.new(1, 0, 0, 14)
+        tLbl.BackgroundTransparency = 1
+        tLbl.Font = activeTheme.FontTitle
+        tLbl.TextColor3 = activeTheme.Accent
+        tLbl.TextSize = 10
+        tLbl.TextXAlignment = Enum.TextXAlignment.Left
+        tLbl.Text = nTitle
+        tLbl.LayoutOrder = 1
+        tLbl.Parent = card
+
+        local cLbl = Instance.new("TextLabel")
+        cLbl.Size = UDim2.new(1, 0, 0, 0)
+        cLbl.AutomaticSize = Enum.AutomaticSize.Y
+        cLbl.BackgroundTransparency = 1
+        cLbl.Font = activeTheme.FontBody
+        cLbl.TextColor3 = activeTheme.TextPrimary
+        cLbl.TextSize = 10
+        cLbl.TextXAlignment = Enum.TextXAlignment.Left
+        cLbl.TextWrapped = true
+        cLbl.Text = nContent
+        cLbl.LayoutOrder = 2
+        cLbl.Parent = card
+
+        TweenService:Create(cScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+
+        task.delay(duration, function()
+            if card and card.Parent then
+                local fade = TweenService:Create(cScale, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.85 })
+                fade:Play()
+                fade.Completed:Connect(function()
+                    if card and card.Parent then
+                        card:Destroy()
+                    end
+                end)
+            end
+        end)
+    end
+
+    function WindowObj:Tab(tabConfig)
+        local tabTitle = type(tabConfig) == "table" and (tabConfig.Title or "Tab") or tostring(tabConfig or "Tab")
+        tabCount = tabCount + 1
+        local tabId = "Tab_" .. tostring(tabCount)
+
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 30)
+        btn.BorderSizePixel = 0
+        btn.LayoutOrder = tabCount
+        btn.Text = "   " .. HuDyUI.StripIcons(tabTitle)
+        btn.TextSize = 10
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.Parent = sidebarFrame
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 5)
+        btnCorner.Parent = btn
+
+        local btnStroke = Instance.new("UIStroke")
+        btnStroke.Thickness = 1
+        btnStroke.Parent = btn
+
+        local indicator = Instance.new("Frame")
+        indicator.Size = UDim2.new(0, 2, 1, -10)
+        indicator.Position = UDim2.new(0, 4, 0, 5)
+        indicator.BorderSizePixel = 0
+        indicator.Parent = btn
+
+        local indCorner = Instance.new("UICorner")
+        indCorner.CornerRadius = UDim.new(1, 0)
+        indCorner.Parent = indicator
+
+        local page = Instance.new("ScrollingFrame")
+        page.Name = tabId .. "_Page"
+        page.Size = UDim2.new(1, 0, 1, 0)
+        page.BackgroundTransparency = 1
+        page.BorderSizePixel = 0
+        page.ScrollBarThickness = 4
+        page.CanvasSize = UDim2.new(0, 0, 0, 0)
+        page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        page.Visible = false
+        page.Parent = contentHolder
+
+        local pagePadding = Instance.new("UIPadding")
+        pagePadding.PaddingTop = UDim.new(0, 2)
+        pagePadding.PaddingBottom = UDim.new(0, 10)
+        pagePadding.PaddingLeft = UDim.new(0, 2)
+        pagePadding.PaddingRight = UDim.new(0, 8)
+        pagePadding.Parent = page
+
+        local pageLayout = Instance.new("UIListLayout")
+        pageLayout.FillDirection = Enum.FillDirection.Vertical
+        pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        pageLayout.Padding = UDim.new(0, 8)
+        pageLayout.Parent = page
+
+        tabs[tabId] = {
+            Button = btn,
+            Stroke = btnStroke,
+            Indicator = indicator,
+            Page = page,
+        }
+
+        btn.MouseButton1Click:Connect(function()
+            SelectTab(tabId)
+        end)
+
+        OnThemeChanged(function(theme)
+            local isSelected = (currentTabId == tabId)
+            btn.Font = theme.FontBody
+            btn.BackgroundColor3 = isSelected and theme.CardBg or theme.CardSubBg
+            btn.TextColor3 = isSelected and theme.Accent or theme.TextMuted
+            btnStroke.Color = isSelected and theme.Accent or theme.Border
+            indicator.BackgroundColor3 = isSelected and theme.Accent or theme.Border
+            page.ScrollBarImageColor3 = theme.Accent
+        end)
+
+        if tabCount == 1 then
+            SelectTab(tabId)
+        end
+
+        local elementOrder = 0
+        local TabObj = { Page = page }
+
+        function TabObj:Section(secCfg)
+            elementOrder = elementOrder + 1
+            local secTitle = type(secCfg) == "table" and (secCfg.Title or "") or tostring(secCfg or "")
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, 0, 0, 22)
+            lbl.BackgroundTransparency = 1
+            lbl.LayoutOrder = elementOrder
+            lbl.Text = string.upper(HuDyUI.StripIcons(secTitle))
+            lbl.TextSize = 10
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.Parent = page
+
+            OnThemeChanged(function(theme)
+                lbl.Font = theme.FontTitle
+                lbl.TextColor3 = theme.Accent
+            end)
+
+            local SectionObj = {
+                Label = lbl,
+                Section = function(self, secCfg) return TabObj:Section(secCfg) end,
+                Space = function(self, height) return TabObj:Space(height) end,
+                Toggle = function(self, tCfg) return TabObj:Toggle(tCfg) end,
+                Dropdown = function(self, dCfg) return TabObj:Dropdown(dCfg) end,
+                MultiChips = function(self, mCfg) return TabObj:MultiChips(mCfg) end,
+                Slider = function(self, sCfg) return TabObj:Slider(sCfg) end,
+                Button = function(self, bCfg) return TabObj:Button(bCfg) end,
+                Paragraph = function(self, pCfg) return TabObj:Paragraph(pCfg) end,
+                InfoCard = function(self, pCfg) return TabObj:Paragraph(pCfg) end,
+                Input = function(self, iCfg) return TabObj:Input(iCfg) end,
+            }
+            setmetatable(SectionObj, {
+                __index = lbl
+            })
+            return SectionObj
+        end
+
+        function TabObj:Space(height)
+            elementOrder = elementOrder + 1
+            local h = tonumber(height) or 8
+            local spacer = Instance.new("Frame")
+            spacer.Size = UDim2.new(1, 0, 0, h)
+            spacer.BackgroundTransparency = 1
+            spacer.BorderSizePixel = 0
+            spacer.LayoutOrder = elementOrder
+            spacer.Parent = page
+            return spacer
+        end
+
+        function TabObj:Paragraph(pCfg)
+            elementOrder = elementOrder + 1
+            pCfg = type(pCfg) == "table" and pCfg or { Title = "Info", Desc = tostring(pCfg or "") }
+
+            local card = Instance.new("Frame")
+            card.Size = UDim2.new(1, 0, 0, 0)
+            card.AutomaticSize = Enum.AutomaticSize.Y
+            card.BorderSizePixel = 0
+            card.LayoutOrder = elementOrder
+            card.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = card
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = card
+
+            local pad = Instance.new("UIPadding")
+            pad.PaddingTop = UDim.new(0, 8)
+            pad.PaddingBottom = UDim.new(0, 8)
+            pad.PaddingLeft = UDim.new(0, 10)
+            pad.PaddingRight = UDim.new(0, 10)
+            pad.Parent = card
+
+            local list = Instance.new("UIListLayout")
+            list.FillDirection = Enum.FillDirection.Vertical
+            list.SortOrder = Enum.SortOrder.LayoutOrder
+            list.Padding = UDim.new(0, 4)
+            list.Parent = card
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, 0, 0, 16)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.LayoutOrder = 1
+            titleLbl.Text = HuDyUI.StripIcons(pCfg.Title or "Thông Tin")
+            titleLbl.TextSize = 11
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            local bodyLbl = Instance.new("TextLabel")
+            bodyLbl.Size = UDim2.new(1, 0, 0, 0)
+            bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
+            bodyLbl.BackgroundTransparency = 1
+            bodyLbl.LayoutOrder = 2
+            bodyLbl.Text = pCfg.Desc or ""
+            bodyLbl.TextSize = 10
+            bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
+            bodyLbl.TextYAlignment = Enum.TextYAlignment.Top
+            bodyLbl.TextWrapped = true
+            bodyLbl.RichText = true
+            bodyLbl.Parent = card
+
+            OnThemeChanged(function(theme)
+                card.BackgroundColor3 = theme.CardBg
+                stroke.Color = theme.Border
+                titleLbl.Font = theme.FontTitle
+                titleLbl.TextColor3 = theme.Accent
+                bodyLbl.Font = theme.FontBody
+                bodyLbl.TextColor3 = theme.TextPrimary
+            end)
+
+            return {
+                SetTitle = function(_, newTitle) titleLbl.Text = HuDyUI.StripIcons(newTitle) end,
+                SetBody = function(_, newBody) bodyLbl.Text = tostring(newBody or "") end,
+                Set = function(_, newTable)
+                    if type(newTable) == "table" then
+                        if newTable.Title then titleLbl.Text = HuDyUI.StripIcons(newTable.Title) end
+                        if newTable.Desc then bodyLbl.Text = tostring(newTable.Desc) end
+                    end
+                end,
+            }
+        end
+        TabObj.InfoCard = TabObj.Paragraph
+
+        function TabObj:Toggle(tCfg)
+            elementOrder = elementOrder + 1
+            tCfg = type(tCfg) == "table" and tCfg or {}
+            local title = HuDyUI.StripIcons(tCfg.Title or "Toggle")
+            local desc = tCfg.Desc and HuDyUI.StripIcons(tCfg.Desc) or nil
+            local state = (tCfg.Value == true or tCfg.Default == true)
+            local callback = tCfg.Callback
+
+            local card = Instance.new("TextButton")
+            card.Size = UDim2.new(1, 0, 0, desc and 48 or 38)
+            card.BorderSizePixel = 0
+            card.AutoButtonColor = false
+            card.Text = ""
+            card.LayoutOrder = elementOrder
+            card.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = card
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = card
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, -66, 0, 18)
+            titleLbl.Position = UDim2.new(0, 12, 0, desc and 6 or 10)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = title
+            titleLbl.TextSize = 11
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            local descLbl = nil
+            if desc and desc ~= "" then
+                descLbl = Instance.new("TextLabel")
+                descLbl.Size = UDim2.new(1, -66, 0, 16)
+                descLbl.Position = UDim2.new(0, 12, 0, 25)
+                descLbl.BackgroundTransparency = 1
+                descLbl.Text = desc
+                descLbl.TextSize = 9
+                descLbl.TextXAlignment = Enum.TextXAlignment.Left
+                descLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                descLbl.Parent = card
+            end
+
+            -- Nút gạt chuyển trạng thái hiện đại (Onyx V2 Switch Pill - 0 Icon)
+            local switchTrack = Instance.new("Frame")
+            switchTrack.Size = UDim2.new(0, 42, 0, 22)
+            switchTrack.Position = UDim2.new(1, -54, 0.5, -11)
+            switchTrack.BorderSizePixel = 0
+            switchTrack.Parent = card
+
+            local switchCorner = Instance.new("UICorner")
+            switchCorner.CornerRadius = UDim.new(1, 0)
+            switchCorner.Parent = switchTrack
+
+            local switchStroke = Instance.new("UIStroke")
+            switchStroke.Thickness = 1
+            switchStroke.Parent = switchTrack
+
+            local switchKnob = Instance.new("Frame")
+            switchKnob.Size = UDim2.new(0, 16, 0, 16)
+            switchKnob.Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+            switchKnob.BorderSizePixel = 0
+            switchKnob.Parent = switchTrack
+
+            local knobCorner = Instance.new("UICorner")
+            knobCorner.CornerRadius = UDim.new(1, 0)
+            knobCorner.Parent = switchKnob
+
+            local function UpdateSwitchVisual(animate)
+                local targetTrackColor = state and activeTheme.Accent or activeTheme.CardSubBg
+                local targetStrokeColor = state and activeTheme.Accent or activeTheme.Border
+                local targetKnobPos = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+                local targetKnobColor = state and (activeTheme.MainBg or Color3.fromRGB(20, 20, 24)) or Color3.fromRGB(180, 180, 195)
+
+                if animate then
+                    TweenService:Create(switchTrack, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        BackgroundColor3 = targetTrackColor
+                    }):Play()
+                    TweenService:Create(switchStroke, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Color = targetStrokeColor
+                    }):Play()
+                    TweenService:Create(switchKnob, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                        Position = targetKnobPos,
+                        BackgroundColor3 = targetKnobColor
+                    }):Play()
+                else
+                    switchTrack.BackgroundColor3 = targetTrackColor
+                    switchStroke.Color = targetStrokeColor
+                    switchKnob.Position = targetKnobPos
+                    switchKnob.BackgroundColor3 = targetKnobColor
+                end
+
+                card.BackgroundColor3 = activeTheme.CardBg
+                stroke.Color = state and activeTheme.Accent or activeTheme.Border
+                titleLbl.Font = activeTheme.FontBody
+                titleLbl.TextColor3 = state and activeTheme.TextPrimary or activeTheme.TextMuted
+                if descLbl then
+                    descLbl.Font = activeTheme.FontBody
+                    descLbl.TextColor3 = activeTheme.TextMuted
+                end
+            end
+
+            local function SetState(newState, fireCallback, userTriggered)
+                state = (newState == true)
+                if userTriggered then
+                    PlaySound("toggle")
+                end
+                UpdateSwitchVisual(true)
+                if fireCallback ~= false and callback then
+                    pcall(callback, state)
+                end
+            end
+
+            card.MouseButton1Click:Connect(function()
+                SetState(not state, true, true)
+            end)
+
+            card.MouseEnter:Connect(function()
+                if not state then
+                    stroke.Color = activeTheme.AccentSecondary or activeTheme.Accent
+                end
+            end)
+            card.MouseLeave:Connect(function()
+                if not state then
+                    stroke.Color = activeTheme.Border
+                end
+            end)
+
+            OnThemeChanged(function()
+                UpdateSwitchVisual(false)
+            end)
+
+            return {
+                Set = function(_, val) SetState(val, false, false) end,
+                SetValue = function(_, val) SetState(val, false, false) end,
+                SetState = function(_, val) SetState(val, false, false) end,
+                Get = function() return state end,
+            }
+        end
+
+        function TabObj:Slider(sCfg)
+            elementOrder = elementOrder + 1
+            sCfg = type(sCfg) == "table" and sCfg or {}
+            local valTbl = type(sCfg.Value) == "table" and sCfg.Value or {}
+            local minVal = tonumber(sCfg.Min or valTbl.Min) or 1
+            local maxVal = tonumber(sCfg.Max or valTbl.Max) or 100
+            local defaultVal = tonumber(sCfg.Default or valTbl.Default or sCfg.Value) or minVal
+            local suffix = sCfg.Suffix or " studs"
+            local callback = sCfg.Callback
+
+            local currentVal = math.clamp(defaultVal, minVal, maxVal)
+
+            local card = Instance.new("Frame")
+            card.Size = UDim2.new(1, 0, 0, 54)
+            card.BorderSizePixel = 0
+            card.LayoutOrder = elementOrder
+            card.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = card
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = card
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(0.6, 0, 0, 18)
+            titleLbl.Position = UDim2.new(0, 12, 0, 6)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = HuDyUI.StripIcons(sCfg.Title or "Slider")
+            titleLbl.TextSize = 11
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            local valLbl = Instance.new("TextLabel")
+            valLbl.Size = UDim2.new(0, 70, 0, 18)
+            valLbl.Position = UDim2.new(1, -142, 0, 6)
+            valLbl.BackgroundTransparency = 1
+            valLbl.Text = tostring(currentVal) .. suffix
+            valLbl.TextSize = 11
+            valLbl.TextXAlignment = Enum.TextXAlignment.Right
+            valLbl.Parent = card
+
+            local minusBtn = Instance.new("TextButton")
+            minusBtn.Size = UDim2.new(0, 26, 0, 20)
+            minusBtn.Position = UDim2.new(1, -64, 0, 5)
+            minusBtn.BorderSizePixel = 0
+            minusBtn.Text = "-"
+            minusBtn.TextSize = 13
+            minusBtn.Parent = card
+
+            local minusCorner = Instance.new("UICorner")
+            minusCorner.CornerRadius = UDim.new(0, 4)
+            minusCorner.Parent = minusBtn
+
+            local plusBtn = Instance.new("TextButton")
+            plusBtn.Size = UDim2.new(0, 26, 0, 20)
+            plusBtn.Position = UDim2.new(1, -34, 0, 5)
+            plusBtn.BorderSizePixel = 0
+            plusBtn.Text = "+"
+            plusBtn.TextSize = 13
+            plusBtn.Parent = card
+
+            local plusCorner = Instance.new("UICorner")
+            plusCorner.CornerRadius = UDim.new(0, 4)
+            plusCorner.Parent = plusBtn
+
+            local track = Instance.new("Frame")
+            track.Size = UDim2.new(1, -24, 0, 6)
+            track.Position = UDim2.new(0, 12, 0, 36)
+            track.BorderSizePixel = 0
+            track.Active = true
+            track.Parent = card
+
+            local trackCorner = Instance.new("UICorner")
+            trackCorner.CornerRadius = UDim.new(1, 0)
+            trackCorner.Parent = track
+
+            local fill = Instance.new("Frame")
+            local initialPct = (currentVal - minVal) / math.max(maxVal - minVal, 1)
+            fill.Size = UDim2.new(initialPct, 0, 1, 0)
+            fill.BorderSizePixel = 0
+            fill.Parent = track
+
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(1, 0)
+            fillCorner.Parent = fill
+
+            -- Onyx style circular thumb knob
+            local thumbKnob = Instance.new("Frame")
+            thumbKnob.Size = UDim2.new(0, 12, 0, 12)
+            thumbKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+            thumbKnob.Position = UDim2.new(1, 0, 0.5, 0)
+            thumbKnob.BorderSizePixel = 0
+            thumbKnob.Parent = fill
+
+            local knobCorner = Instance.new("UICorner")
+            knobCorner.CornerRadius = UDim.new(1, 0)
+            knobCorner.Parent = thumbKnob
+
+            local knobStroke = Instance.new("UIStroke")
+            knobStroke.Thickness = 1.5
+            knobStroke.Color = Color3.fromRGB(255, 255, 255)
+            knobStroke.Transparency = 0.35
+            knobStroke.Parent = thumbKnob
+
+            local function SetValue(newVal, fireCallback, userTriggered)
+                currentVal = math.clamp(math.floor(newVal + 0.5), minVal, maxVal)
+                local pct = (currentVal - minVal) / math.max(maxVal - minVal, 1)
+                fill.Size = UDim2.new(pct, 0, 1, 0)
+                valLbl.Text = tostring(currentVal) .. suffix
+                if userTriggered then
+                    PlaySound("click")
+                end
+                if fireCallback ~= false and callback then
+                    pcall(callback, currentVal)
+                end
+            end
+
+            minusBtn.MouseButton1Click:Connect(function() SetValue(currentVal - 1, true, true) end)
+            plusBtn.MouseButton1Click:Connect(function() SetValue(currentVal + 1, true, true) end)
+
+            local sliding = false
+            local function UpdateFromInput(input)
+                local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+                SetValue(minVal + (maxVal - minVal) * pos, true, false)
+            end
+
+            track.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    sliding = true
+                    PlaySound("click")
+                    UpdateFromInput(input)
+                end
+            end)
+
+            AddConnection(UserInputService.InputChanged:Connect(function(input)
+                if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    UpdateFromInput(input)
+                end
+            end))
+
+            AddConnection(UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    sliding = false
+                end
+            end))
+
+            OnThemeChanged(function(theme)
+                card.BackgroundColor3 = theme.CardBg
+                stroke.Color = theme.Border
+                titleLbl.Font = theme.FontBody
+                titleLbl.TextColor3 = theme.TextPrimary
+                valLbl.Font = theme.FontTitle
+                valLbl.TextColor3 = theme.Accent
+                minusBtn.BackgroundColor3 = theme.CardSubBg
+                minusBtn.TextColor3 = theme.TextPrimary
+                minusBtn.Font = theme.FontTitle
+                plusBtn.BackgroundColor3 = theme.CardSubBg
+                plusBtn.TextColor3 = theme.TextPrimary
+                plusBtn.Font = theme.FontTitle
+                track.BackgroundColor3 = theme.CardSubBg
+                fill.BackgroundColor3 = theme.Accent
+                thumbKnob.BackgroundColor3 = theme.Accent
+            end)
+
+            return {
+                Set = function(_, v) SetValue(v, false, false) end,
+                Get = function() return currentVal end,
+            }
+        end
+
+        function TabObj:MultiChips(mCfg)
+            elementOrder = elementOrder + 1
+            mCfg = type(mCfg) == "table" and mCfg or {}
+            local values = type(mCfg.Values) == "table" and mCfg.Values or {"Melee", "Sword", "Fruit"}
+            local defaultList = mCfg.Value or mCfg.Default or values
+            local isMulti = (mCfg.Multi ~= false)
+            local callback = mCfg.Callback
+
+            local card = Instance.new("Frame")
+            card.Size = UDim2.new(1, 0, 0, 0)
+            card.AutomaticSize = Enum.AutomaticSize.Y
+            card.BorderSizePixel = 0
+            card.LayoutOrder = elementOrder
+            card.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = card
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = card
+
+            local pad = Instance.new("UIPadding")
+            pad.PaddingTop = UDim.new(0, 7)
+            pad.PaddingBottom = UDim.new(0, 8)
+            pad.PaddingLeft = UDim.new(0, 10)
+            pad.PaddingRight = UDim.new(0, 10)
+            pad.Parent = card
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, 0, 0, 16)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = HuDyUI.StripIcons(mCfg.Title or "Select Options")
+            titleLbl.TextSize = 10
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            local chipGrid = Instance.new("Frame")
+            chipGrid.Size = UDim2.new(1, 0, 0, 0)
+            chipGrid.Position = UDim2.new(0, 0, 0, 22)
+            chipGrid.AutomaticSize = Enum.AutomaticSize.Y
+            chipGrid.BackgroundTransparency = 1
+            chipGrid.Parent = card
+
+            local gridLayout = Instance.new("UIGridLayout")
+            gridLayout.CellSize = UDim2.new(0.32, 0, 0, 26)
+            gridLayout.CellPadding = UDim2.new(0.015, 0, 0, 6)
+            gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            gridLayout.Parent = chipGrid
+
+            local selectedMap = {}
+            if type(defaultList) == "table" then
+                for k, v in pairs(defaultList) do
+                    if type(k) == "number" and type(v) == "string" then
+                        selectedMap[v] = true
+                    elseif type(k) == "string" and v == true then
+                        selectedMap[k] = true
+                    end
+                end
+            elseif type(defaultList) == "string" then
+                selectedMap[defaultList] = true
+            end
+
+            local chips = {}
+            local function RefreshChips(fireCallback)
+                local list = {}
+                for _, itemName in ipairs(values) do
+                    if selectedMap[itemName] then
+                        table.insert(list, itemName)
+                    end
+                end
+                if #list == 0 and #values > 0 then
+                    selectedMap[values[1]] = true
+                    table.insert(list, values[1])
+                end
+
+                for _, itemName in ipairs(values) do
+                    local c = chips[itemName]
+                    if c then
+                        local active = (selectedMap[itemName] == true)
+                        c.Btn.BackgroundColor3 = active and activeTheme.CardBg or activeTheme.CardSubBg
+                        c.Btn.TextColor3 = active and activeTheme.TextPrimary or activeTheme.TextMuted
+                        c.Btn.Text = tostring(itemName) .. (active and " [BẬT]" or " [TẮT]")
+                        c.Stroke.Color = active and activeTheme.Accent or activeTheme.Border
+                        c.Stroke.Transparency = active and 0.1 or 0.6
+                    end
+                end
+
+                if fireCallback and callback then
+                    pcall(callback, isMulti and list or list[1], selectedMap)
+                end
+            end
+
+            for idx, itemName in ipairs(values) do
+                local cBtn = Instance.new("TextButton")
+                cBtn.BorderSizePixel = 0
+                cBtn.LayoutOrder = idx
+                cBtn.TextSize = 9
+                cBtn.Parent = chipGrid
+
+                local cCorner = Instance.new("UICorner")
+                cCorner.CornerRadius = UDim.new(0, 5)
+                cCorner.Parent = cBtn
+
+                local cStroke = Instance.new("UIStroke")
+                cStroke.Thickness = 1
+                cStroke.Parent = cBtn
+
+                chips[itemName] = { Btn = cBtn, Stroke = cStroke }
+
+                cBtn.MouseButton1Click:Connect(function()
+                    PlaySound("click")
+                    if isMulti then
+                        selectedMap[itemName] = not selectedMap[itemName]
+                    else
+                        for k in pairs(selectedMap) do selectedMap[k] = false end
+                        selectedMap[itemName] = true
+                    end
+                    RefreshChips(true)
+                end)
+            end
+
+            OnThemeChanged(function(theme)
+                card.BackgroundColor3 = theme.CardBg
+                stroke.Color = theme.Border
+                titleLbl.Font = theme.FontBody
+                titleLbl.TextColor3 = theme.TextPrimary
+                for _, itemName in ipairs(values) do
+                    if chips[itemName] then
+                        chips[itemName].Btn.Font = theme.FontTitle
+                    end
+                end
+                RefreshChips(false)
+            end)
+
+            return {
+                Refresh = function(_, newValues)
+                    values = type(newValues) == "table" and newValues or values
+                    RefreshChips(false)
+                end,
+                Set = function(_, val)
+                    if type(val) == "table" then
+                        table.clear(selectedMap)
+                        for k, v in pairs(val) do
+                            if type(k) == "number" and type(v) == "string" then selectedMap[v] = true
+                            elseif type(k) == "string" and v == true then selectedMap[k] = true end
+                        end
+                    elseif type(val) == "string" then
+                        table.clear(selectedMap)
+                        selectedMap[val] = true
+                    end
+                    RefreshChips(true)
+                end,
+                Select = function(self, val)
+                    self:Set(val)
+                end,
+                Get = function()
+                    local list = {}
+                    for _, itemName in ipairs(values) do
+                        if selectedMap[itemName] then table.insert(list, itemName) end
+                    end
+                    return isMulti and list or list[1]
+                end,
+            }
+        end
+        TabObj.Dropdown = TabObj.MultiChips
+
+        function TabObj:Button(bCfg)
+            elementOrder = elementOrder + 1
+            bCfg = type(bCfg) == "table" and bCfg or { Title = tostring(bCfg or "Button") }
+
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 36)
+            btn.BorderSizePixel = 0
+            btn.LayoutOrder = elementOrder
+            btn.Text = ""
+            btn.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = btn
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = btn
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(0.68, -12, 1, 0)
+            titleLbl.Position = UDim2.new(0, 12, 0, 0)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = HuDyUI.StripIcons(bCfg.Title or "Button")
+            titleLbl.TextSize = 11
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = btn
+
+            local badgeLbl = Instance.new("TextLabel")
+            badgeLbl.Size = UDim2.new(0, 95, 0, 22)
+            badgeLbl.Position = UDim2.new(1, -105, 0.5, -11)
+            badgeLbl.BorderSizePixel = 0
+            badgeLbl.Text = HuDyUI.StripIcons(bCfg.Badge or "THỰC HIỆN")
+            badgeLbl.TextSize = 9
+            badgeLbl.Parent = btn
+
+            local badgeCorner = Instance.new("UICorner")
+            badgeCorner.CornerRadius = UDim.new(0, 5)
+            badgeCorner.Parent = badgeLbl
+
+            btn.MouseButton1Click:Connect(function()
+                PlaySound("click")
+                if bCfg.Callback then pcall(bCfg.Callback) end
+            end)
+
+            btn.MouseEnter:Connect(function()
+                stroke.Color = activeTheme.Accent
+            end)
+            btn.MouseLeave:Connect(function()
+                stroke.Color = activeTheme.Border
+            end)
+
+            OnThemeChanged(function(theme)
+                btn.BackgroundColor3 = theme.CardBg
+                stroke.Color = theme.Border
+                titleLbl.Font = theme.FontBody
+                titleLbl.TextColor3 = theme.TextPrimary
+                badgeLbl.BackgroundColor3 = theme.CardSubBg
+                badgeLbl.TextColor3 = theme.Accent
+                badgeLbl.Font = theme.FontTitle
+            end)
+        end
+
+        function TabObj:Input(iCfg)
+            elementOrder = elementOrder + 1
+            iCfg = type(iCfg) == "table" and iCfg or {}
+
+            local card = Instance.new("Frame")
+            card.Size = UDim2.new(1, 0, 0, 40)
+            card.BorderSizePixel = 0
+            card.LayoutOrder = elementOrder
+            card.Parent = page
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 7)
+            corner.Parent = card
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 1
+            stroke.Parent = card
+
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(0.48, -12, 1, 0)
+            titleLbl.Position = UDim2.new(0, 12, 0, 0)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = HuDyUI.StripIcons(iCfg.Title or "Input")
+            titleLbl.TextSize = 11
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            local box = Instance.new("TextBox")
+            box.Size = UDim2.new(0.48, -12, 0, 26)
+            box.Position = UDim2.new(0.52, 0, 0.5, -13)
+            box.BorderSizePixel = 0
+            box.PlaceholderText = iCfg.PlaceholderText or iCfg.Placeholder or "Nhập nội dung..."
+            box.Text = iCfg.Default or iCfg.Value or ""
+            box.TextSize = 10
+            box.ClearTextOnFocus = false
+            box.Parent = card
+
+            local boxCorner = Instance.new("UICorner")
+            boxCorner.CornerRadius = UDim.new(0, 5)
+            boxCorner.Parent = box
+
+            box.Focused:Connect(function()
+                stroke.Color = activeTheme.Accent
+            end)
+            box.FocusLost:Connect(function()
+                stroke.Color = activeTheme.Border
+                PlaySound("click")
+                if iCfg.Callback then pcall(iCfg.Callback, box.Text) end
+            end)
+
+            OnThemeChanged(function(theme)
+                card.BackgroundColor3 = theme.CardBg
+                stroke.Color = theme.Border
+                titleLbl.Font = theme.FontBody
+                titleLbl.TextColor3 = theme.TextPrimary
+                box.BackgroundColor3 = theme.CardSubBg
+                box.TextColor3 = theme.Accent
+                box.PlaceholderColor3 = theme.TextMuted
+                box.Font = theme.FontBody
+            end)
+
+            return {
+                Set = function(_, txt) box.Text = tostring(txt or "") end,
+                Get = function() return box.Text end,
+            }
+        end
+
+        return TabObj
+    end
+
+    -- Tạo tự động Tab chọn Chủ Đề Giao Diện (8 Themes)
+    function WindowObj:CreateThemeTab(tabTitle)
+        local ThemeTab = self:Tab({ Title = tabTitle or "Chủ Đề UI" })
+        ThemeTab:Section({ Title = "Chọn Chủ Đề Giao Diện (Tự động lưu)" })
+
+        local themeCards = {}
+        for idx, tName in ipairs(HuDyUI.ThemeOrder) do
+            local tData = HuDyUI.Themes[tName]
+            local card = Instance.new("TextButton")
+            card.Size = UDim2.new(1, 0, 0, 44)
+            card.BorderSizePixel = 0
+            card.AutoButtonColor = false
+            card.LayoutOrder = idx + 1
+            card.Text = ""
+            card.Parent = ThemeTab.Page
+
+            local cCorner = Instance.new("UICorner")
+            cCorner.CornerRadius = UDim.new(0, 6)
+            cCorner.Parent = card
+
+            local cStroke = Instance.new("UIStroke")
+            cStroke.Thickness = 1
+            cStroke.Parent = card
+
+            local swatch1 = Instance.new("Frame")
+            swatch1.Size = UDim2.new(0, 14, 0, 28)
+            swatch1.Position = UDim2.new(0, 10, 0.5, -14)
+            swatch1.BackgroundColor3 = tData.Accent
+            swatch1.BorderSizePixel = 0
+            swatch1.Parent = card
+
+            local sw1Corner = Instance.new("UICorner")
+            sw1Corner.CornerRadius = UDim.new(0, 4)
+            sw1Corner.Parent = swatch1
+
+            local swatch2 = Instance.new("Frame")
+            swatch2.Size = UDim2.new(0, 14, 0, 28)
+            swatch2.Position = UDim2.new(0, 28, 0.5, -14)
+            swatch2.BackgroundColor3 = tData.AccentSecondary
+            swatch2.BorderSizePixel = 0
+            swatch2.Parent = card
+
+            local sw2Corner = Instance.new("UICorner")
+            sw2Corner.CornerRadius = UDim.new(0, 4)
+            sw2Corner.Parent = swatch2
+
+            local nameLbl = Instance.new("TextLabel")
+            nameLbl.Size = UDim2.new(1, -165, 0, 18)
+            nameLbl.Position = UDim2.new(0, 52, 0, 7)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = string.upper(tData.Name)
+            nameLbl.TextColor3 = tData.Accent
+            nameLbl.Font = tData.FontTitle
+            nameLbl.TextSize = 11
+            nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+            nameLbl.Parent = card
+
+            local subLbl = Instance.new("TextLabel")
+            subLbl.Size = UDim2.new(1, -165, 0, 15)
+            subLbl.Position = UDim2.new(0, 52, 0, 25)
+            subLbl.BackgroundTransparency = 1
+            subLbl.Text = tData.Subtitle
+            subLbl.TextColor3 = tData.TextMuted
+            subLbl.Font = tData.FontBody
+            subLbl.TextSize = 9
+            subLbl.TextXAlignment = Enum.TextXAlignment.Left
+            subLbl.Parent = card
+
+            local statusPill = Instance.new("TextLabel")
+            statusPill.Size = UDim2.new(0, 96, 0, 24)
+            statusPill.Position = UDim2.new(1, -106, 0.5, -12)
+            statusPill.BorderSizePixel = 0
+            statusPill.Font = tData.FontTitle
+            statusPill.TextSize = 9
+            statusPill.Parent = card
+
+            local spCorner = Instance.new("UICorner")
+            spCorner.CornerRadius = UDim.new(0, 5)
+            spCorner.Parent = statusPill
+
+            themeCards[tName] = {
+                Card = card,
+                Stroke = cStroke,
+                StatusPill = statusPill,
+                Data = tData,
+            }
+
+            card.MouseButton1Click:Connect(function()
+                ApplyTheme(tName)
+            end)
+        end
+
+        OnThemeChanged(function(theme)
+            for tName, item in pairs(themeCards) do
+                local isCurrent = (tName == theme.Name)
+                item.Card.BackgroundColor3 = item.Data.CardBg
+                item.Stroke.Color = isCurrent and item.Data.Accent or item.Data.Border
+                item.StatusPill.BackgroundColor3 = isCurrent and item.Data.Accent or item.Data.CardSubBg
+                item.StatusPill.TextColor3 = isCurrent and item.Data.MainBg or item.Data.TextMuted
+                item.StatusPill.Text = isCurrent and "ĐANG DÙNG" or "CHỌN THEME"
+            end
+        end)
+
+        return ThemeTab
+    end
+
+    function WindowObj:Destroy()
+        for _, conn in ipairs(connections) do
+            pcall(function() conn:Disconnect() end)
+        end
+        connections = {}
+        if screenGui then
+            screenGui:Destroy()
+        end
+    end
+
+    ApplyTheme(currentThemeName)
+    UpdateMenuOpenState(not startMinimized)
+    screenGui.Parent = parentGui
+
+    HuDyUI.LastWindow = WindowObj
+    return WindowObj
+end
+
+function HuDyUI.Notify(self, notifyCfg)
+    if HuDyUI.LastWindow and HuDyUI.LastWindow.Notify then
+        return HuDyUI.LastWindow:Notify(notifyCfg)
+    end
+end
+HuDyUI.notify = HuDyUI.Notify
+
+return HuDyUI
+
+
